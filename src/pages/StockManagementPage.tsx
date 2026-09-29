@@ -94,25 +94,31 @@ export const StockManagementPage: React.FC<StockManagementPageProps> = ({
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const result = storageService.adjustStock(
-        selectedBook.id,
-        adjustType,
-        qty,
-        currentUser?.name || 'เจ้าหน้าที่คลัง',
-        note.trim()
-      );
-
-      setIsSubmitting(false);
-
-      if (result) {
-        setSuccessMessage(
-          `บันทึกการปรับสต๊อกหนังสือ "${result.book.book_name}" สำเร็จ (ยอดคงเหลือใหม่: ${result.book.stock_quantity} เล่ม)`
+    (async () => {
+      try {
+        const result = await storageService.adjustStock(
+          selectedBook.id,
+          adjustType,
+          qty,
+          currentUser?.name || 'เจ้าหน้าที่คลัง',
+          note.trim()
         );
-        setNote('');
-        onRefresh();
+
+        setIsSubmitting(false);
+
+        if (result) {
+          setSuccessMessage(
+            `บันทึกการปรับสต๊อกหนังสือ "${result.book.book_name}" สำเร็จ (ยอดคงเหลือใหม่: ${result.book.stock_quantity} เล่ม)`
+          );
+          setNote('');
+          onRefresh();
+        }
+      } catch (err) {
+        console.error('Failed to adjust stock:', err);
+        setIsSubmitting(false);
+        setErrorMessage('เกิดข้อผิดพลาดในการบันทึกสต๊อก กรุณาลองใหม่อีกครั้ง');
       }
-    }, 250);
+    })();
   };
 
   // Filtered recent logs for right column
@@ -244,7 +250,7 @@ export const StockManagementPage: React.FC<StockManagementPageProps> = ({
                 ) : (
                   selectableBooks.map((b) => (
                     <option key={b.id} value={b.id}>
-                      {b.book_name} (คงเหลือ: {b.stock_quantity} เล่ม)
+                      {b.book_name} (พ.ศ. {b.published_year || '-'}) · คงเหลือ {b.stock_quantity} เล่ม
                     </option>
                   ))
                 )}
@@ -264,11 +270,16 @@ export const StockManagementPage: React.FC<StockManagementPageProps> = ({
                   }}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs sm:text-sm font-extrabold text-[#111827] truncate">
-                    {selectedBook.book_name}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs sm:text-sm font-extrabold text-[#111827] truncate">
+                      {selectedBook.book_name}
+                    </span>
+                    <span className="px-2 py-0.2 rounded-md bg-[#FCE7F3] text-[#ED1760] font-black text-[10px] border border-[#F3DDE7]">
+                      พ.ศ. {selectedBook.published_year}
+                    </span>
                   </div>
                   <div className="text-xs text-[#64748B] mt-0.5 truncate">
-                    ผู้แต่ง: {selectedBook.author}
+                    ผู้แต่ง: {selectedBook.author} · {selectedBook.category || 'สิ่งพิมพ์ทั่วไป'}
                   </div>
                   <div className="mt-1 flex items-center gap-2">
                     <span className="text-xs text-[#64748B]">

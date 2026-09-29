@@ -188,32 +188,38 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
     setIsSubmitting(true);
     setErrorMessages([]);
 
-    setTimeout(() => {
-      const newBook = storageService.addBook(
-        {
-          book_name: bookName.trim(),
-          author: author.trim(),
-          pages: parsedPages,
-          isbn: isbn.trim(),
-          published_year: parsedYear,
-          price: parsedPrice,
-          cover_image: coverImage,
-          stock_quantity: parsedStock,
-          created_by: currentUser?.name || 'เจ้าหน้าที่สำนักพิมพ์',
-          category,
-          description: description.trim(),
-        },
-        currentUser?.name || 'เจ้าหน้าที่สำนักพิมพ์'
-      );
+    (async () => {
+      try {
+        const newBook = await storageService.addBook(
+          {
+            book_name: bookName.trim(),
+            author: author.trim(),
+            pages: parsedPages,
+            isbn: isbn.trim(),
+            published_year: parsedYear,
+            price: parsedPrice,
+            cover_image: coverImage,
+            stock_quantity: parsedStock,
+            created_by: currentUser?.name || 'เจ้าหน้าที่สำนักพิมพ์',
+            category,
+            description: description.trim(),
+          },
+          currentUser?.name || 'เจ้าหน้าที่สำนักพิมพ์'
+        );
 
-      setSuccessMessage('บันทึกข้อมูลหนังสือเรียบร้อยแล้ว');
-      storageService.clearAddBookDraft();
-      setIsSubmitting(false);
+        setSuccessMessage('บันทึกข้อมูลหนังสือเรียบร้อยแล้ว');
+        storageService.clearAddBookDraft();
+        setIsSubmitting(false);
 
-      setTimeout(() => {
-        onSuccess(newBook);
-      }, 700);
-    }, 300);
+        setTimeout(() => {
+          onSuccess(newBook);
+        }, 500);
+      } catch (err) {
+        console.error('Failed to add book:', err);
+        setIsSubmitting(false);
+        setErrorMessages(['เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง']);
+      }
+    })();
   };
 
   return (

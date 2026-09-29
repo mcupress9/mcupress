@@ -227,18 +227,17 @@ export const storageService = {
   getBooks(): Book[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.BOOKS);
-      if (!data) {
+      if (data === null) {
         localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(INITIAL_BOOKS));
         return INITIAL_BOOKS;
       }
       const parsed: Book[] = JSON.parse(data);
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(INITIAL_BOOKS));
-        return INITIAL_BOOKS;
+      if (!Array.isArray(parsed)) {
+        return [];
       }
       return parsed;
     } catch {
-      return INITIAL_BOOKS;
+      return [];
     }
   },
 
@@ -255,15 +254,18 @@ export const storageService = {
 
     if (supabase) {
       try {
-        await supabase.from('books').delete().neq('id', '_all_clear_guard_');
         await supabase.from('transactions').delete().neq('id', '_all_clear_guard_');
+        await supabase.from('books').delete().neq('id', '_all_clear_guard_');
       } catch (e) {
         console.warn('Error clearing books in Supabase:', e);
       }
     }
   },
 
-  addBook(bookData: Omit<Book, 'id' | 'created_at' | 'updated_at'>, creatorName: string): Book {
+  async addBook(
+    bookData: Omit<Book, 'id' | 'created_at' | 'updated_at'>,
+    creatorName: string
+  ): Promise<Book> {
     const books = this.getBooks();
     const newBook: Book = {
       ...bookData,
@@ -274,29 +276,6 @@ export const storageService = {
     };
     books.unshift(newBook);
     this.saveBooks(books);
-
-    // Sync new book to Supabase cloud database
-    if (supabase) {
-      supabase
-        .from('books')
-        .insert(newBook)
-        .then(
-          ({ error }) => {
-            if (error) {
-              if (isTableMissingError(error)) {
-                setSupabaseStatus('tables_missing');
-              } else {
-                console.warn('Supabase insert error (using local cache):', error.message);
-              }
-            } else {
-              setSupabaseStatus('connected');
-            }
-          },
-          () => {
-            setSupabaseStatus('fallback_local');
-          }
-        );
-    }
 
     // Also record initial stock transaction if stock > 0
     if (newBook.stock_quantity > 0) {
@@ -312,10 +291,32 @@ export const storageService = {
       });
     }
 
+    // Sync new book to Supabase cloud database
+    if (supabase) {
+      try {
+        const { error } = await supabase.from('books').insert(newBook);
+        if (error) {
+          if (isTableMissingError(error)) {
+            setSupabaseStatus('tables_missing');
+          } else {
+            console.error('Supabase insert error (cached locally):', error.message);
+          }
+        } else {
+          setSupabaseStatus('connected');
+        }
+      } catch {
+        setSupabaseStatus('fallback_local');
+      }
+    }
+
     return newBook;
   },
 
-  updateBook(id: string, updates: Partial<Book>, updaterName: string): Book | null {
+  async updateBook(
+    id: string,
+    updates: Partial<Book>,
+    updaterName: string
+  ): Promise<Book | null> {
     const books = this.getBooks();
     const index = books.findIndex((b) => b.id === id);
     if (index === -1) return null;
@@ -329,22 +330,6 @@ export const storageService = {
     };
     books[index] = updatedBook;
     this.saveBooks(books);
-
-    // Sync book update to Supabase
-    if (supabase) {
-      supabase
-        .from('books')
-        .update(updatedBook)
-        .eq('id', updatedBook.id)
-        .then(
-          ({ error }) => {
-            if (error && isTableMissingError(error)) {
-              setSupabaseStatus('tables_missing');
-            }
-          },
-          () => {}
-        );
-    }
 
     // If stock changed directly via book edit, record transaction
     if (updates.stock_quantity !== undefined && updates.stock_quantity !== oldStock) {
@@ -361,42 +346,64 @@ export const storageService = {
       });
     }
 
+    // Sync book update to Supabase
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('books')
+          .update(updatedBook)
+          .eq('id', updatedBook.id);
+        if (error && isTableMissingError(error)) {
+          setSupabaseStatus('tables_missing');
+        }
+      } catch (err) {
+        console.warn('Supabase update sync error:', err);
+      }
+    }
+
     return updatedBook;
   },
 
-  deleteBook(id: string): boolean {
+  async deleteBook(id: string): Promise<boolean> {
     const books = this.getBooks();
     const filtered = books.filter((b) => b.id !== id);
     if (filtered.length === books.length) return false;
     this.saveBooks(filtered);
 
+    // Also remove associated transactions locally
+    const txs = this.getTransactions().filter((t) => t.book_id !== id);
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
+    window.dispatchEvent(new Event('mcu_transactions_updated'));
+
     // Sync deletion to Supabase
     if (supabase) {
-      supabase
-        .from('books')
-        .delete()
-        .eq('id', id)
-        .then(
-          ({ error }) => {
-            if (error && isTableMissingError(error)) {
-              setSupabaseStatus('tables_missing');
-            }
-          },
-          () => {}
-        );
+      try {
+        // Delete dependent transactions first to avoid foreign key violations
+        await supabase.from('transactions').delete().eq('book_id', id);
+        const { error } = await supabase.from('books').delete().eq('id', id);
+        if (error) {
+          if (isTableMissingError(error)) {
+            setSupabaseStatus('tables_missing');
+          } else {
+            console.error('Supabase delete error:', error);
+          }
+        }
+      } catch (err) {
+        console.warn('Network issue during Supabase delete:', err);
+      }
     }
 
     return true;
   },
 
   // Stock Adjustment
-  adjustStock(
+  async adjustStock(
     bookId: string,
     type: 'in' | 'increase' | 'decrease',
     quantity: number,
     operatorName: string,
     note: string
-  ): { book: Book; transaction: StockTransaction } | null {
+  ): Promise<{ book: Book; transaction: StockTransaction } | null> {
     const books = this.getBooks();
     const index = books.findIndex((b) => b.id === bookId);
     if (index === -1) return null;
@@ -416,25 +423,6 @@ export const storageService = {
     books[index] = book;
     this.saveBooks(books);
 
-    // Sync adjusted book to Supabase
-    if (supabase) {
-      supabase
-        .from('books')
-        .update({
-          stock_quantity: stockAfter,
-          updated_at: book.updated_at,
-        })
-        .eq('id', book.id)
-        .then(
-          ({ error }) => {
-            if (error && isTableMissingError(error)) {
-              setSupabaseStatus('tables_missing');
-            }
-          },
-          () => {}
-        );
-    }
-
     const transaction = this.addTransaction({
       book_id: book.id,
       book_name: book.book_name,
@@ -445,6 +433,24 @@ export const storageService = {
       created_by: operatorName,
       note: note || (type === 'in' ? 'รับเข้าสต๊อก' : type === 'increase' ? 'ปรับเพิ่มสต๊อก' : 'ปรับลดสต๊อก'),
     });
+
+    // Sync adjusted book to Supabase
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('books')
+          .update({
+            stock_quantity: stockAfter,
+            updated_at: book.updated_at,
+          })
+          .eq('id', book.id);
+        if (error && isTableMissingError(error)) {
+          setSupabaseStatus('tables_missing');
+        }
+      } catch (err) {
+        console.warn('Supabase stock adjustment sync error:', err);
+      }
+    }
 
     return { book, transaction };
   },
@@ -726,15 +732,9 @@ export function initializeSupabaseSync(): () => void {
 
       setSupabaseStatus('connected');
 
-      if (data && data.length > 0) {
+      if (data) {
         localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(data));
         window.dispatchEvent(new Event('mcu_books_updated'));
-      } else {
-        // If Supabase table exists but is empty, seed it with initial books
-        const currentLocal = storageService.getBooks();
-        if (currentLocal.length > 0) {
-          supabase!.from('books').upsert(currentLocal).then(() => {});
-        }
       }
     } catch (e) {
       console.warn('Network error reaching Supabase, using local fallback:', e);
@@ -789,9 +789,12 @@ export function initializeSupabaseSync(): () => void {
             const next = currentBooks.map((b) => (b.id === updated.id ? updated : b));
             storageService.saveBooks(next);
           } else if (payload.eventType === 'DELETE') {
-            const oldId = payload.old.id;
-            const next = currentBooks.filter((b) => b.id !== oldId);
-            storageService.saveBooks(next);
+            const oldId = (payload.old as any)?.id;
+            if (oldId) {
+              const current = storageService.getBooks();
+              const next = current.filter((b) => b.id !== oldId);
+              storageService.saveBooks(next);
+            }
           }
         }
       )
@@ -809,10 +812,13 @@ export function initializeSupabaseSync(): () => void {
               window.dispatchEvent(new Event('mcu_transactions_updated'));
             }
           } else if (payload.eventType === 'DELETE') {
-            const oldId = payload.old.id;
-            const updated = currentTxs.filter((t) => t.id !== oldId);
-            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
-            window.dispatchEvent(new Event('mcu_transactions_updated'));
+            const oldId = (payload.old as any)?.id;
+            if (oldId) {
+              const current = storageService.getTransactions();
+              const updated = current.filter((t) => t.id !== oldId);
+              localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
+              window.dispatchEvent(new Event('mcu_transactions_updated'));
+            }
           }
         }
       )

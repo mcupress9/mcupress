@@ -11,6 +11,13 @@ import {
   BookOpen,
   PackagePlus,
   RotateCcw,
+  Calendar,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+  Boxes,
+  Coins,
+  CheckCircle2,
 } from 'lucide-react';
 import { Book } from '../types';
 import { StockBadge } from '../components/StockBadge';
@@ -35,10 +42,18 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
 }) => {
   const { canDeleteBook, canEditBook } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table' | 'by_year'>('grid');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedPriceRange, setSelectedPriceRange] = useState<string>('all');
+  const [collapsedYears, setCollapsedYears] = useState<Record<number, boolean>>({});
+
+  const toggleYearCollapse = (year: number) => {
+    setCollapsedYears((prev) => ({
+      ...prev,
+      [year]: !prev[year],
+    }));
+  };
 
   // Available unique years
   const availableYears = useMemo(() => {
@@ -47,6 +62,25 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
       if (b.published_year) set.add(b.published_year);
     });
     return Array.from(set).sort((a, b) => b - a);
+  }, [books]);
+
+  // Overall Yearly Stats for Ribbon (สต๊อกของแต่ละปี)
+  const yearlyStats = useMemo(() => {
+    const map: Record<number, { titles: number; copies: number; value: number }> = {};
+    books.forEach((b) => {
+      const yr = b.published_year || 2567;
+      if (!map[yr]) map[yr] = { titles: 0, copies: 0, value: 0 };
+      map[yr].titles += 1;
+      map[yr].copies += Number(b.stock_quantity) || 0;
+      map[yr].value += (Number(b.stock_quantity) || 0) * (Number(b.price) || 0);
+    });
+    return Object.entries(map)
+      .map(([yrStr, data]) => ({
+        year: Number(yrStr),
+        yearLabel: `พ.ศ. ${yrStr}`,
+        ...data,
+      }))
+      .sort((a, b) => b.year - a.year);
   }, [books]);
 
   // Real-time filter
@@ -83,6 +117,46 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
       return true;
     });
   }, [books, searchQuery, selectedStatus, selectedYear, selectedPriceRange]);
+
+  // Grouped by year for 'by_year' mode
+  const groupedByYear = useMemo(() => {
+    const map: Record<number, Book[]> = {};
+    filteredBooks.forEach((b) => {
+      const yr = b.published_year || 2567;
+      if (!map[yr]) map[yr] = [];
+      map[yr].push(b);
+    });
+
+    const sortedYears = Object.keys(map)
+      .map(Number)
+      .sort((a, b) => b - a);
+
+    return sortedYears.map((year) => {
+      const yearBooks = map[year];
+      const totalCopies = yearBooks.reduce((sum, b) => sum + (Number(b.stock_quantity) || 0), 0);
+      const totalValue = yearBooks.reduce(
+        (sum, b) => sum + (Number(b.stock_quantity) || 0) * (Number(b.price) || 0),
+        0
+      );
+      const inStock = yearBooks.filter((b) => (b.stock_quantity || 0) > 10).length;
+      const lowStock = yearBooks.filter(
+        (b) => (b.stock_quantity || 0) > 0 && (b.stock_quantity || 0) <= 10
+      ).length;
+      const outOfStock = yearBooks.filter((b) => (b.stock_quantity || 0) === 0).length;
+
+      return {
+        year,
+        yearLabel: `พ.ศ. ${year}`,
+        books: yearBooks,
+        titlesCount: yearBooks.length,
+        totalCopies,
+        totalValue,
+        inStock,
+        lowStock,
+        outOfStock,
+      };
+    });
+  }, [filteredBooks]);
 
   const formatBaht = (amount: number) => {
     return new Intl.NumberFormat('th-TH', {
@@ -125,9 +199,10 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {/* View Mode Toggle */}
+            {/* View Mode Toggle: Grid | Table | Grouped By Year */}
             <div className="flex items-center bg-[#FCF8FA] p-1 rounded-[12px] border border-[#F3DDE7]">
               <button
+                type="button"
                 onClick={() => setViewMode('grid')}
                 className={`p-1.5 px-2.5 rounded-[10px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'grid'
@@ -140,6 +215,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                 <span className="hidden sm:inline">การ์ด</span>
               </button>
               <button
+                type="button"
                 onClick={() => setViewMode('table')}
                 className={`p-1.5 px-2.5 rounded-[10px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'table'
@@ -150,6 +226,19 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
               >
                 <List className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">ตาราง</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('by_year')}
+                className={`p-1.5 px-2.5 rounded-[10px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'by_year'
+                    ? 'bg-[#ED1760] text-white shadow-2xs'
+                    : 'text-[#64748B] hover:text-[#111827]'
+                }`}
+                title="มุมมองแยกตามปีที่พิมพ์ (Yearly Grouping)"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">แยกตามปี</span>
               </button>
             </div>
 
@@ -251,9 +340,72 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
             )}
           </div>
         </div>
+
+        {/* YEARLY STOCK QUICK FILTER RIBBON (สรุปสต๊อกของแต่ละปี) */}
+        <div className="pt-2 border-t border-[#F3DDE7]/50 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-xs font-bold text-[#64748B] flex-shrink-0 flex items-center gap-1 mr-1">
+            <Calendar className="w-3.5 h-3.5 text-[#ED1760]" />
+            <span>สต๊อกแต่ละปี:</span>
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setSelectedYear('all')}
+            className={`px-3 py-1.5 rounded-[12px] text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1.5 ${
+              selectedYear === 'all'
+                ? 'bg-[#ED1760] text-white shadow-xs'
+                : 'bg-[#FCF8FA] text-[#64748B] hover:text-[#ED1760] border border-[#F3DDE7]'
+            }`}
+          >
+            <span>ทั้งหมดทุกปี</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                selectedYear === 'all'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-[#FCE7F3] text-[#ED1760]'
+              }`}
+            >
+              {books.reduce((sum, b) => sum + (Number(b.stock_quantity) || 0), 0)} เล่ม
+            </span>
+          </button>
+
+          {yearlyStats.map((item) => {
+            const isSelected = selectedYear === item.year.toString();
+            return (
+              <button
+                key={item.year}
+                type="button"
+                onClick={() => setSelectedYear(isSelected ? 'all' : item.year.toString())}
+                className={`px-3 py-1.5 rounded-[12px] text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-[#ED1760] text-white shadow-xs'
+                    : 'bg-white text-[#111827] hover:text-[#ED1760] border border-[#F3DDE7] hover:border-[#ED1760]/30'
+                }`}
+              >
+                <span>{item.yearLabel}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    isSelected
+                      ? 'bg-white/20 text-white'
+                      : 'bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]'
+                  }`}
+                >
+                  สต๊อก {item.copies} เล่ม
+                </span>
+                <span
+                  className={`text-[10px] ${
+                    isSelected ? 'text-white/80' : 'text-[#64748B]'
+                  }`}
+                >
+                  ({item.titles} ชื่อ · {formatBaht(item.value)})
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Empty State */}
+      {/* Empty States */}
       {books.length === 0 ? (
         <div className="bg-white rounded-[20px] border border-[#F3DDE7] p-12 text-center max-w-lg mx-auto shadow-2xs">
           <div className="w-16 h-16 rounded-full bg-[#FCE7F3] text-[#ED1760] flex items-center justify-center mx-auto mb-4">
@@ -298,7 +450,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
         </div>
       ) : null}
 
-      {/* View Mode 1: Grid Cards */}
+      {/* VIEW MODE 1: GRID CARDS */}
       {viewMode === 'grid' && filteredBooks.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
           {filteredBooks.map((book) => (
@@ -410,7 +562,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
         </div>
       )}
 
-      {/* View Mode 2: Table */}
+      {/* VIEW MODE 2: TABLE */}
       {viewMode === 'table' && filteredBooks.length > 0 && (
         <div className="bg-white rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] overflow-hidden">
           <div className="overflow-x-auto">
@@ -449,23 +601,30 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                         />
                       </div>
                     </td>
-                    <td className="px-5 py-3 font-bold text-[#111827] max-w-xs">
+                    <td className="px-5 py-3 max-w-xs font-extrabold text-[#111827]">
                       <button
                         onClick={() => onSelectBook(book)}
-                        className="text-left line-clamp-2 hover:text-[#ED1760] transition-colors cursor-pointer"
+                        className="text-left line-clamp-1 hover:text-[#ED1760] transition-colors cursor-pointer"
                       >
                         {book.book_name}
                       </button>
+                      <div className="text-[11px] font-normal text-[#64748B] mt-0.5">
+                        {book.category || 'สิ่งพิมพ์วิชาการ'}
+                      </div>
                     </td>
-                    <td className="px-5 py-3 text-[#64748B] text-xs">{book.author}</td>
-                    <td className="px-5 py-3 text-[#64748B] text-xs tabular-nums">{book.pages}</td>
-                    <td className="px-5 py-3 text-[#64748B] text-xs font-mono">{book.isbn || '-'}</td>
-                    <td className="px-5 py-3 text-[#64748B] text-xs font-medium">พ.ศ. {book.published_year}</td>
-                    <td className="px-5 py-3 font-extrabold text-[#ED1760] tabular-nums">
+                    <td className="px-5 py-3 text-xs text-[#64748B]">{book.author}</td>
+                    <td className="px-5 py-3 text-xs text-[#64748B]">{book.pages}</td>
+                    <td className="px-5 py-3 text-xs text-[#64748B] font-mono">
+                      {book.isbn || '-'}
+                    </td>
+                    <td className="px-5 py-3 text-xs text-[#111827] font-semibold">
+                      พ.ศ. {book.published_year}
+                    </td>
+                    <td className="px-5 py-3 font-semibold text-[#111827] tabular-nums">
                       {formatBaht(book.price)}
                     </td>
-                    <td className="px-5 py-3 font-extrabold text-[#111827] tabular-nums">
-                      {book.stock_quantity}
+                    <td className="px-5 py-3 font-bold text-[#111827] tabular-nums">
+                      {book.stock_quantity} เล่ม
                     </td>
                     <td className="px-5 py-3">
                       <StockBadge quantity={book.stock_quantity} size="sm" />
@@ -513,6 +672,183 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* VIEW MODE 3: GROUPED BY YEAR (ข้อมูลหนังสือแต่ละปี + สต๊อกแต่ละปี) */}
+      {viewMode === 'by_year' && filteredBooks.length > 0 && (
+        <div className="space-y-6">
+          {groupedByYear.map((yearGroup) => {
+            const isCollapsed = collapsedYears[yearGroup.year] === true;
+            return (
+              <div
+                key={yearGroup.year}
+                className="bg-white rounded-[22px] border border-[#F3DDE7] shadow-2xs overflow-hidden"
+              >
+                {/* Year Header Banner */}
+                <div className="p-5 sm:p-6 bg-gradient-to-r from-[#FCF8FA] via-white to-[#FCE7F3]/25 border-b border-[#F3DDE7] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="px-3.5 py-1.5 rounded-[12px] bg-[#ED1760] text-white font-black text-sm shadow-xs shadow-[#ED1760]/20 flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4" />
+                      <span>{yearGroup.yearLabel}</span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-base font-extrabold text-[#111827]">
+                        สิ่งพิมพ์ที่จัดพิมพ์ปี {yearGroup.year}
+                      </h4>
+                      <div className="flex items-center gap-2 text-xs text-[#64748B] mt-0.5 flex-wrap">
+                        <span>
+                          จำนวน <strong>{yearGroup.titlesCount}</strong> ชื่อเรื่อง
+                        </span>
+                        <span>·</span>
+                        <span>
+                          สต๊อกรวม{' '}
+                          <strong className="text-[#10B981] font-black">
+                            {yearGroup.totalCopies}
+                          </strong>{' '}
+                          เล่ม
+                        </span>
+                        <span>·</span>
+                        <span>
+                          มูลค่ารวม{' '}
+                          <strong className="text-[#ED1760] font-black">
+                            {formatBaht(yearGroup.totalValue)}
+                          </strong>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Badges & Collapse Toggle */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-1 rounded-[10px] bg-[#ECFDF5] text-[#065F46] font-bold text-xs border border-[#A7F3D0]">
+                      มีสินค้า: {yearGroup.inStock}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-[10px] bg-[#FFFBEB] text-[#92400E] font-bold text-xs border border-[#FDE68A]">
+                      ใกล้หมด: {yearGroup.lowStock}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-[10px] bg-[#FEF2F2] text-[#991B1B] font-bold text-xs border border-[#FECACA]">
+                      หมดสต๊อก: {yearGroup.outOfStock}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleYearCollapse(yearGroup.year)}
+                      className="p-1.5 rounded-[10px] text-[#64748B] hover:text-[#111827] hover:bg-[#FCF8FA] border border-[#F3DDE7] transition-colors cursor-pointer"
+                      title={isCollapsed ? 'ขยายรายการ' : 'ย่อรายการ'}
+                    >
+                      {isCollapsed ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronUp className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Books Grid under this year */}
+                {!isCollapsed && (
+                  <div className="p-5 sm:p-6 bg-[#FCF8FA]/30">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {yearGroup.books.map((book) => {
+                        const lineValue = (book.stock_quantity || 0) * (book.price || 0);
+                        return (
+                          <div
+                            key={book.id}
+                            className="bg-white rounded-[16px] border border-[#F3DDE7] hover:border-[#ED1760]/40 p-4 shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between"
+                          >
+                            <div className="flex gap-3">
+                              {/* Book Cover */}
+                              <div
+                                onClick={() => onSelectBook(book)}
+                                className="w-16 h-22 rounded-lg overflow-hidden bg-slate-100 border border-[#F3DDE7] shadow-2xs flex-shrink-0 cursor-pointer relative"
+                              >
+                                <img
+                                  src={book.cover_image}
+                                  alt={book.book_name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200';
+                                  }}
+                                />
+                              </div>
+
+                              {/* Book Details */}
+                              <div className="flex-1 min-w-0">
+                                <h5
+                                  onClick={() => onSelectBook(book)}
+                                  className="text-xs sm:text-sm font-extrabold text-[#111827] hover:text-[#ED1760] line-clamp-2 cursor-pointer transition-colors"
+                                  title={book.book_name}
+                                >
+                                  {book.book_name}
+                                </h5>
+                                <p className="text-[11px] text-[#64748B] line-clamp-1 mt-0.5">
+                                  {book.author}
+                                </p>
+                                <div className="text-[10px] text-[#64748B] mt-1">
+                                  <span>{book.category || 'ทั่วไป'}</span> ·{' '}
+                                  <span className="font-mono">{book.isbn || '-'}</span>
+                                </div>
+
+                                <div className="mt-2 flex items-center justify-between">
+                                  <span className="text-xs font-black text-[#ED1760] tabular-nums">
+                                    {formatBaht(book.price)}
+                                  </span>
+                                  <span className="text-[11px] text-[#64748B]">
+                                    มูลค่ารวม: <strong>{formatBaht(lineValue)}</strong>
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Bottom Stock & Actions */}
+                            <div className="mt-3 pt-3 border-t border-[#F3DDE7]/50 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-[#111827] tabular-nums">
+                                  สต๊อก: {book.stock_quantity} เล่ม
+                                </span>
+                                <StockBadge quantity={book.stock_quantity} size="sm" showIcon={false} />
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => onSelectBook(book)}
+                                  className="p-1 px-2 rounded-[8px] bg-[#FCE7F3] hover:bg-[#ED1760] text-[#ED1760] hover:text-white text-[11px] font-bold transition-colors cursor-pointer"
+                                  title="ดูรายละเอียด"
+                                >
+                                  ดูข้อมูล
+                                </button>
+                                {onQuickStockAdjust && (
+                                  <button
+                                    onClick={() => onQuickStockAdjust(book)}
+                                    className="p-1 rounded-[8px] text-[#10B981] bg-[#ECFDF5] hover:bg-[#10B981] hover:text-white transition-colors cursor-pointer"
+                                    title="ปรับสต๊อก"
+                                  >
+                                    <PackagePlus className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {canEditBook && (
+                                  <button
+                                    onClick={() => onEditBook(book)}
+                                    className="p-1 rounded-[8px] text-[#3B82F6] bg-blue-50 hover:bg-[#3B82F6] hover:text-white transition-colors cursor-pointer"
+                                    title="แก้ไขข้อมูล"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

@@ -43,6 +43,9 @@ const MainApplication: React.FC = () => {
     }, 3500);
   };
 
+  // Deleting state
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
   // Reload data from storage
   const reloadData = useCallback(() => {
     const loadedBooks = storageService.getBooks();
@@ -53,16 +56,14 @@ const MainApplication: React.FC = () => {
     setTransactions(loadedTxs);
     setUsers(loadedUsers);
 
-    // If currently selected book was updated, sync it
-    if (selectedBook) {
-      const refreshed = loadedBooks.find((b) => b.id === selectedBook.id);
-      if (refreshed) {
-        setSelectedBook(refreshed);
-      }
-    }
-  }, [selectedBook]);
+    // If currently selected book was updated, sync it safely
+    setSelectedBook((prev) => {
+      if (!prev) return null;
+      return loadedBooks.find((b) => b.id === prev.id) || null;
+    });
+  }, []);
 
-  // Initial load, real-time Firestore sync & storage event listener
+  // Initial load, real-time sync & storage event listener
   useEffect(() => {
     reloadData();
 
@@ -113,20 +114,30 @@ const MainApplication: React.FC = () => {
     setBookToDelete(book);
   };
 
-  // Confirm delete
-  const confirmDeleteBook = () => {
-    if (!bookToDelete) return;
+  // Confirm delete with async Supabase deletion & safe cleanup
+  const confirmDeleteBook = async () => {
+    if (!bookToDelete || isDeleting) return;
+    setIsDeleting(true);
     const bookName = bookToDelete.book_name;
-    storageService.deleteBook(bookToDelete.id);
-    setBookToDelete(null);
-    showToast(`ลบหนังสือ "${bookName}" ออกจากระบบเรียบร้อยแล้ว`);
+    const targetId = bookToDelete.id;
 
-    if (selectedBook?.id === bookToDelete.id) {
-      setSelectedBook(null);
-      setIsDetailView(false);
-      setCurrentTab('books');
+    try {
+      await storageService.deleteBook(targetId);
+      showToast(`ลบหนังสือ "${bookName}" ออกจากระบบเรียบร้อยแล้ว`);
+
+      if (selectedBook?.id === targetId) {
+        setSelectedBook(null);
+        setIsDetailView(false);
+        setCurrentTab('books');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      showToast(`เกิดข้อผิดพลาดในการลบหนังสือ`);
+    } finally {
+      setIsDeleting(false);
+      setBookToDelete(null);
+      reloadData();
     }
-    reloadData();
   };
 
   // Handle quick stock adjustment jump
@@ -313,17 +324,26 @@ const MainApplication: React.FC = () => {
             <div className="pt-2 flex items-center gap-2.5">
               <button
                 type="button"
+                disabled={isDeleting}
                 onClick={() => setBookToDelete(null)}
-                className="flex-1 py-2.5 px-4 rounded-[12px] border border-[#F3DDE7] text-[#64748B] hover:bg-[#FCF8FA] text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+                className="flex-1 py-2.5 px-4 rounded-[12px] border border-[#F3DDE7] text-[#64748B] hover:bg-[#FCF8FA] disabled:opacity-50 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>
               <button
                 type="button"
+                disabled={isDeleting}
                 onClick={confirmDeleteBook}
-                className="flex-1 py-2.5 px-4 rounded-[12px] bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#EF4444]/20 transition-all cursor-pointer"
+                className="flex-1 py-2.5 px-4 rounded-[12px] bg-[#EF4444] hover:bg-[#DC2626] disabled:opacity-60 text-white text-xs sm:text-sm font-bold shadow-md shadow-[#EF4444]/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
-                ยืนยันลบหนังสือ
+                {isDeleting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <span>กำลังลบ...</span>
+                  </>
+                ) : (
+                  <span>ยืนยันลบหนังสือ</span>
+                )}
               </button>
             </div>
           </div>

@@ -94,34 +94,40 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
     setIsSubmitting(true);
     setErrorMessages([]);
 
-    setTimeout(() => {
-      const updated = storageService.updateBook(
-        book.id,
-        {
-          book_name: bookName.trim(),
-          author: author.trim(),
-          pages: parsedPages,
-          isbn: isbn.trim(),
-          published_year: parsedYear,
-          price: parsedPrice,
-          stock_quantity: parsedStock,
-          cover_image: coverImage,
-          category,
-          description: description.trim(),
-        },
-        currentUser?.name || 'เจ้าหน้าที่'
-      );
+    (async () => {
+      try {
+        const updated = await storageService.updateBook(
+          book.id,
+          {
+            book_name: bookName.trim(),
+            author: author.trim(),
+            pages: parsedPages,
+            isbn: isbn.trim(),
+            published_year: parsedYear,
+            price: parsedPrice,
+            stock_quantity: parsedStock,
+            cover_image: coverImage,
+            category,
+            description: description.trim(),
+          },
+          currentUser?.name || 'เจ้าหน้าที่'
+        );
 
-      setIsSubmitting(false);
+        setIsSubmitting(false);
 
-      if (updated) {
-        setSuccessMessage('บันทึกการแก้ไขเรียบร้อยแล้ว');
-        setTimeout(() => {
-          onSaved(updated);
-          onClose();
-        }, 700);
+        if (updated) {
+          setSuccessMessage('บันทึกการแก้ไขเรียบร้อยแล้ว');
+          setTimeout(() => {
+            onSaved(updated);
+            onClose();
+          }, 500);
+        }
+      } catch (err) {
+        console.error('Failed to update book:', err);
+        setIsSubmitting(false);
+        setErrorMessages(['เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง']);
       }
-    }, 300);
+    })();
   };
 
   return (
