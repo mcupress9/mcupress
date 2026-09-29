@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #ED1760;
+  --color-primary-dark: #D41456;
+  --color-primary-light: #FCE7F3;
+  --color-mcu-bg: #FCF8FA;
+  --color-mcu-card: #FFFFFF;
+  --color-mcu-text: #111827;
+  --color-mcu-muted: #64748B;
+  --color-mcu-border: #F3DDE7;
+  --color-mcu-success: #10B981;
+  --color-mcu-warning: #F59E0B;
+  --color-mcu-danger: #EF4444;
+  --color-mcu-info: #3B82F6;
+  --font-sans: var(--app-font-family, 'LINE Seed Sans TH', 'Noto Sans Thai', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+}
+
+@layer base {
+  :root {
+    --app-font-family: 'LINE Seed Sans TH', 'Noto Sans Thai', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  html,
+  body {
+    font-family: var(--app-font-family);
+    letter-spacing: -0.012em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    background-color: #FCF8FA;
+    color: #111827;
+  }
+
+  /* Custom soft scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #F3DDE7;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ED1760;
+  }
+}

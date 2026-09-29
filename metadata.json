@@ -1,0 +1,6 @@
+{
+  "name": "ระบบจัดการสต๊อกหนังสือ - สำนักพิมพ์มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+  "description": "ระบบบริหารจัดการสต๊อกหนังสือ สำหรับสำนักพิมพ์มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย (MCU Press)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
