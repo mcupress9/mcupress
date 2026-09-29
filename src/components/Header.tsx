@@ -1,26 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Menu,
   Bell,
-  Zap,
   Crown,
   ShieldCheck,
   UserCheck,
   AlertTriangle,
   CheckCircle2,
   ChevronRight,
-  Database,
-  Copy,
-  Check,
-  X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import {
-  subscribeSupabaseStatus,
-  SupabaseConnectionStatus,
-  SUPABASE_SCHEMA_SQL,
-  SUPABASE_URL,
-} from '../services/supabase';
 
 interface HeaderProps {
   onOpenMobileMenu: () => void;
@@ -39,22 +28,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { currentUser } = useAuth();
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
-  const [supabaseStatus, setSupabaseStatus] = useState<SupabaseConnectionStatus>('connecting');
-  const [showSqlModal, setShowSqlModal] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = subscribeSupabaseStatus((status) => {
-      setSupabaseStatus(status);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleCopySql = () => {
-    navigator.clipboard.writeText(SUPABASE_SCHEMA_SQL);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2500);
-  };
 
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#F3DDE7] px-4 sm:px-6 lg:px-8 py-3.5 transition-all">
@@ -85,59 +58,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right Section: Supabase Status Badge, Notification & User Profile Card */}
-        <div className="flex items-center gap-2 sm:gap-3 relative">
-          {/* Supabase Connection Status Badge */}
-          {supabaseStatus === 'connected' && (
-            <button
-              onClick={() => setShowSqlModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] text-xs font-bold select-none shadow-2xs hover:bg-[#D1FAE5] transition-colors cursor-pointer"
-              title="Supabase: เชื่อมต่อฐานข้อมูลคลาวด์และซิงค์เรียลไทม์ (คลิกเพื่อดู Schema SQL)"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]"></span>
-              </span>
-              <span className="text-[11px] font-bold tracking-tight">⚡ SUPABASE: เชื่อมต่ออยู่</span>
-            </button>
-          )}
-
-          {supabaseStatus === 'connecting' && (
-            <div
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold select-none shadow-2xs"
-              title="กำลังเชื่อมต่อ Supabase..."
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500 animate-pulse"></span>
-              </span>
-              <span className="text-[11px] font-bold tracking-tight">⚡ SUPABASE: กำลังเชื่อมต่อ</span>
-            </div>
-          )}
-
-          {supabaseStatus === 'tables_missing' && (
-            <button
-              onClick={() => setShowSqlModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 text-xs font-bold select-none shadow-2xs hover:bg-amber-100 transition-colors cursor-pointer animate-pulse"
-              title="ตาราง Supabase ยังไม่ได้ถูกสร้าง คลิกเพื่อคัดลอกคำสั่ง SQL สร้างตาราง"
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-              <span className="text-[11px] font-bold tracking-tight">⚠️ SUPABASE: ยังไม่ได้สร้างตาราง</span>
-            </button>
-          )}
-
-          {supabaseStatus === 'fallback_local' && (
-            <button
-              onClick={() => setShowSqlModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8FAFC] text-slate-700 border border-slate-200 text-xs font-bold select-none shadow-2xs hover:bg-slate-100 transition-colors cursor-pointer"
-              title="ทำงานในโหมด LocalStorage Fallback (คลิกเพื่อดูการตั้งค่า Supabase)"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-400"></span>
-              </span>
-              <span className="text-[11px] font-bold tracking-tight">⚡ SUPABASE: โหมด Local</span>
-            </button>
-          )}
-
+        {/* Right Section: Notification & User Profile Card */}
+        <div className="flex items-center gap-2.5 sm:gap-3.5 relative">
           {/* Notification Button */}
           <div className="relative">
             <button
@@ -249,105 +171,6 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
       </div>
-
-      {/* Supabase Schema / Database Info Modal */}
-      {showSqlModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in"
-          onClick={() => setShowSqlModal(false)}
-        >
-          <div
-            className="bg-white rounded-3xl border border-[#F3DDE7] shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-[#FCF8FA]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#ED1760]/10 text-[#ED1760] flex items-center justify-center">
-                  <Database className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-[#111827]">
-                    คำสั่งสร้างตารางฐานข้อมูล Supabase (SQL Schema)
-                  </h3>
-                  <p className="text-[11px] text-[#64748B]">
-                    MCU Press Book Inventory • PostgreSQL Database
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowSqlModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto space-y-4 text-xs">
-              <div className="p-3.5 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] flex items-start gap-2.5">
-                <Zap className="w-4 h-4 text-[#10B981] flex-shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-bold">สถานะ Supabase: {supabaseStatus === 'connected' ? 'เชื่อมต่อเรียบร้อยแล้ว' : supabaseStatus === 'tables_missing' ? 'ยังไม่ได้รัน SQL สร้างตาราง' : 'โหมด LocalStorage Fallback'}</div>
-                  <div className="text-[11px] text-[#047857] mt-0.5">
-                    Endpoint: <code className="bg-emerald-100 px-1 py-0.5 rounded text-[10px] font-mono">{SUPABASE_URL || 'bofzxwwdzhoebuooeiqx.supabase.co'}</code>
-                  </div>
-                </div>
-              </div>
-
-              {supabaseStatus === 'tables_missing' && (
-                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5 text-amber-800">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    <span>คำแนะนำ: ตารางยังไม่ได้ถูกสร้างใน Supabase</span>
-                  </div>
-                  <p className="text-[11px] text-amber-700 leading-relaxed">
-                    โปรดกดปุ่ม <strong>"คัดลอกคำสั่ง SQL"</strong> ด้านล่าง แล้วนำไปเปิดที่ <strong>Supabase Dashboard &gt; SQL Editor</strong> แล้วกด Run เพียงครั้งเดียว ระบบจะสร้างตาราง `books`, `transactions`, `users` พร้อม RLS และ Realtime ให้ทันที
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-[#111827]">PostgreSQL Schema Script:</span>
-                  <button
-                    onClick={handleCopySql}
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-[10px] bg-[#ED1760] hover:bg-[#D41456] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
-                  >
-                    {isCopied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>คัดลอกแล้ว!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>คัดลอกคำสั่ง SQL</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                <pre className="bg-[#111827] text-slate-100 p-4 rounded-2xl font-mono text-[11px] leading-relaxed overflow-x-auto max-h-64 border border-slate-800">
-                  {SUPABASE_SCHEMA_SQL}
-                </pre>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-3.5 border-t border-slate-100 bg-[#FCF8FA] flex items-center justify-between">
-              <span className="text-[11px] text-[#64748B]">
-                ระบบมีระบบแคช LocalStorage ทำงานอัตโนมัติ ข้อมูลไม่สูญหาย
-              </span>
-              <button
-                onClick={() => setShowSqlModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
-              >
-                ปิดหน้าต่าง
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 };
