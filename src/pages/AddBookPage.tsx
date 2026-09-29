@@ -39,7 +39,7 @@ const PRESET_COVERS = [
 ];
 
 export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel }) => {
-  const { currentUser, canAddBook, switchUser } = useAuth();
+  const { currentUser } = useAuth();
 
   // Load existing draft if available
   const savedDraft = storageService.getAddBookDraft<any>();
@@ -244,31 +244,6 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
           </div>
         </div>
       </div>
-
-      {!canAddBook && (
-        <div className="p-4 rounded-[16px] bg-[#FFFBEB] border border-[#FDE68A] text-[#B45309] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-[10px] bg-amber-100 text-amber-800 flex items-center justify-center flex-shrink-0">
-              <AlertCircle className="w-5 h-5 text-amber-700" />
-            </div>
-            <div>
-              <div className="font-bold text-xs sm:text-sm">
-                เข้าใช้งานด้วยสิทธิ์ Staff (จำกัดสิทธิ์เฉพาะการดูข้อมูลและจัดการสต๊อก)
-              </div>
-              <div className="text-[11px] sm:text-xs text-amber-800/80 mt-0.5">
-                การลงทะเบียนหนังสือเล่มใหม่สงวนไว้สำหรับ Admin และ Manager เท่านั้น
-              </div>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => switchUser('user-1')}
-            className="px-4 py-2 rounded-[10px] bg-amber-700 hover:bg-amber-800 text-white font-bold text-xs transition-colors self-start sm:self-auto cursor-pointer"
-          >
-            สลับเป็น Admin (ทดสอบระบบ)
-          </button>
-        </div>
-      )}
 
       {/* Success Notification */}
       {successMessage && (
@@ -581,7 +556,7 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
           </button>
           <button
             type="submit"
-            disabled={isSubmitting || !canAddBook}
+            disabled={isSubmitting}
             className="px-6 py-2.5 rounded-[12px] bg-[#ED1760] hover:bg-[#D41456] text-white font-bold text-xs sm:text-sm shadow-sm shadow-[#ED1760]/20 transition-all cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูลหนังสือ'}

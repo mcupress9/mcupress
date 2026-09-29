@@ -1,9 +1,18 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { User } from '../types';
-import { storageService } from '../services/storage';
+
+export const DEFAULT_USER: User = {
+  id: 'staff-mcu',
+  name: 'เจ้าหน้าที่สำนักพิมพ์ มจร',
+  email: 'pressmcu51@gmail.com',
+  role: 'Admin',
+  status: 'active',
+  created_at: new Date().toISOString(),
+  department: 'สำนักพิมพ์มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย',
+};
 
 interface AuthContextType {
-  currentUser: User | null;
+  currentUser: User;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isManager: boolean;
@@ -20,89 +29,33 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    // Attempt to restore user or default to Admin for immediate friendly access if exists
-    const active = storageService.getActiveUser();
-    if (active) return active;
-    // Default to the first user (Admin) for frictionless first impression
-    const users = storageService.getUsers();
-    return users[0] || null;
-  });
+  const [currentUser] = useState<User>(DEFAULT_USER);
 
-  useEffect(() => {
-    storageService.setActiveUser(currentUser);
-  }, [currentUser]);
-
-  const login = (identity: string, password?: string): { success: boolean; message?: string } => {
-    const trimmed = identity.trim().toLowerCase();
-    const users = storageService.getUsers();
-
-    const matchedUser = users.find(
-      (u) =>
-        u.email.toLowerCase() === trimmed ||
-        u.name.toLowerCase().includes(trimmed) ||
-        (trimmed === 'admin' && u.role === 'Admin') ||
-        (trimmed === 'staff' && u.role === 'Staff') ||
-        (trimmed === 'somchai' && u.email.includes('somchai')) ||
-        (trimmed === 'waraporn' && u.email.includes('waraporn'))
-    );
-
-    if (!matchedUser) {
-      return {
-        success: false,
-        message: 'ไม่พบบัญชีผู้ใช้งานนี้ในระบบ โปรดตรวจสอบ Email หรือ Username',
-      };
-    }
-
-    if (matchedUser.status === 'inactive') {
-      return {
-        success: false,
-        message: 'บัญชีนี้ถูกระงับการใช้งานชั่วคราว กรุณาติดต่อผู้ดูแลระบบ',
-      };
-    }
-
-    // Check password if provided and user has password
-    if (password && matchedUser.password && matchedUser.password !== password) {
-      return {
-        success: false,
-        message: 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง',
-      };
-    }
-
-    setCurrentUser(matchedUser);
+  const login = () => {
     return { success: true };
   };
 
   const logout = () => {
-    setCurrentUser(null);
-    storageService.setActiveUser(null);
+    // No-op: Login system disabled, user always has access
   };
 
-  const switchUser = (userId: string) => {
-    const users = storageService.getUsers();
-    const found = users.find((u) => u.id === userId);
-    if (found && found.status === 'active') {
-      setCurrentUser(found);
-    }
+  const switchUser = () => {
+    // No-op: Equal access for all
   };
-
-  const isAdmin = currentUser?.role === 'Admin';
-  const isManager = currentUser?.role === 'Manager';
-  const isStaff = currentUser?.role === 'Staff';
 
   const value: AuthContextType = {
     currentUser,
-    isAuthenticated: !!currentUser,
-    isAdmin,
-    isManager,
-    isStaff,
+    isAuthenticated: true,
+    isAdmin: true,
+    isManager: true,
+    isStaff: true,
     login,
     logout,
     switchUser,
-    canDeleteBook: isAdmin,
-    canManageUsers: isAdmin,
-    canAddBook: isAdmin || isManager,
-    canEditBook: isAdmin || isManager,
+    canDeleteBook: true,
+    canManageUsers: true,
+    canAddBook: true,
+    canEditBook: true,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

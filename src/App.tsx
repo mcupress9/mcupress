@@ -4,7 +4,6 @@ import { storageService, initializeSupabaseSync } from './services/storage';
 import { Book, StockTransaction, User } from './types';
 import { Header } from './components/Header';
 import { Sidebar, NavTab } from './components/Sidebar';
-import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { BooksListPage } from './pages/BooksListPage';
 import { AddBookPage } from './pages/AddBookPage';
@@ -12,12 +11,11 @@ import { BookDetailPage } from './pages/BookDetailPage';
 import { EditBookModal } from './pages/EditBookModal';
 import { StockManagementPage } from './pages/StockManagementPage';
 import { SummaryPage } from './pages/SummaryPage';
-import { UsersPage } from './pages/UsersPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { Trash2 } from 'lucide-react';
 
 const MainApplication: React.FC = () => {
-  const { currentUser, canDeleteBook } = useAuth();
+  const { currentUser } = useAuth();
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
@@ -27,7 +25,6 @@ const MainApplication: React.FC = () => {
   // Data States
   const [books, setBooks] = useState<Book[]>([]);
   const [transactions, setTransactions] = useState<StockTransaction[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
@@ -50,11 +47,9 @@ const MainApplication: React.FC = () => {
   const reloadData = useCallback(() => {
     const loadedBooks = storageService.getBooks();
     const loadedTxs = storageService.getTransactions();
-    const loadedUsers = storageService.getUsers();
 
     setBooks(loadedBooks);
     setTransactions(loadedTxs);
-    setUsers(loadedUsers);
 
     // If currently selected book was updated, sync it safely
     setSelectedBook((prev) => {
@@ -107,10 +102,6 @@ const MainApplication: React.FC = () => {
 
   // Handle delete request
   const handleDeleteRequest = (book: Book) => {
-    if (!canDeleteBook) {
-      alert('เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถลบหนังสือได้');
-      return;
-    }
     setBookToDelete(book);
   };
 
@@ -147,24 +138,18 @@ const MainApplication: React.FC = () => {
     setCurrentTab('stock');
   };
 
-  // If not logged in, render LoginPage
-  if (!currentUser) {
-    return <LoginPage />;
-  }
-
   const tabTitles: Record<NavTab, { title: string; subtitle: string }> = {
-    dashboard: { title: 'Dashboard', subtitle: 'ภาพรวมระบบสต๊อกหนังสือ สำนักพิมพ์ มจร' },
+    dashboard: { title: 'หน้าหลัก', subtitle: 'ภาพรวมระบบสต๊อกหนังสือ สำนักพิมพ์ มจร' },
     books: { title: 'หนังสือ', subtitle: 'แคตตาล็อกและการจัดการข้อมูลสิ่งพิมพ์ทางวิชาการ' },
     'add-book': { title: 'เพิ่มหนังสือ', subtitle: 'ลงทะเบียนหนังสือวิชาการเข้าสู่ระบบคลัง' },
     stock: { title: 'สต๊อก', subtitle: 'รับเข้าหนังสือ ปรับปรุงสต๊อก และประวัติธุรกรรม' },
     summary: { title: 'สรุปข้อมูล', subtitle: 'รายงานสถิติสต๊อกและส่งออกไฟล์ Excel/CSV' },
-    users: { title: 'ผู้ใช้งาน', subtitle: 'จัดการบัญชีและสิทธิ์การเข้าถึงของเจ้าหน้าที่ 3 คน' },
     settings: { title: 'ตั้งค่าระบบ', subtitle: 'ข้อมูลสำนักพิมพ์ เกณฑ์การแจ้งเตือน และสำรองข้อมูล' },
   };
 
   const currentHeaderInfo = isDetailView
     ? { title: 'รายละเอียดหนังสือ', subtitle: selectedBook?.book_name || 'ข้อมูลสิ่งพิมพ์' }
-    : tabTitles[currentTab] || { title: 'Dashboard', subtitle: 'ภาพรวมระบบสต๊อกหนังสือ สำนักพิมพ์ มจร.' };
+    : tabTitles[currentTab] || { title: 'หน้าหลัก', subtitle: 'ภาพรวมระบบสต๊อกหนังสือ สำนักพิมพ์ มจร.' };
 
   return (
     <div className="min-h-screen bg-[#FCF8FA] flex text-[#111827] font-sans selection:bg-[#FCE7F3] selection:text-[#ED1760]">
@@ -262,10 +247,6 @@ const MainApplication: React.FC = () => {
 
               {currentTab === 'summary' && (
                 <SummaryPage books={books} onSelectBook={handleSelectBook} />
-              )}
-
-              {currentTab === 'users' && (
-                <UsersPage users={users} onRefresh={reloadData} />
               )}
 
               {currentTab === 'settings' && (

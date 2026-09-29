@@ -532,30 +532,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onDataReset }) => {
           </div>
         </div>
 
-        {isAdmin && (
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
-            <div className="text-xs text-slate-500">
-              การจัดการชุดข้อมูล: ลบข้อมูลหนังสือทั้งหมดเพื่อเริ่มกรอกข้อมูลจริง หรือรีเซ็ตเป็นชุดข้อมูลตัวอย่าง
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleClearAllBooks}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200/80 transition-colors flex items-center gap-1.5 cursor-pointer"
-                title="ลบหนังสือและประวัติการเคลื่อนไหวสต๊อกทั้งหมด เพื่อเริ่มบันทึกข้อมูลของตนเอง"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                <span>ลบข้อมูลหนังสือทั้งหมด (เริ่มกรอกเอง)</span>
-              </button>
-              <button
-                onClick={handleResetDefaults}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
-                <span>โหลดตัวอย่าง (Default Demo)</span>
-              </button>
-            </div>
+        <div className="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
+          <div className="text-xs text-slate-500">
+            การจัดการชุดข้อมูล: ลบข้อมูลหนังสือทั้งหมดเพื่อเริ่มกรอกข้อมูลจริง หรือรีเซ็ตเป็นชุดข้อมูลตัวอย่าง
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleClearAllBooks}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200/80 transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="ลบหนังสือและประวัติการเคลื่อนไหวสต๊อกทั้งหมด เพื่อเริ่มบันทึกข้อมูลของตนเอง"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-600" />
+              <span>ลบข้อมูลหนังสือทั้งหมด (เริ่มกรอกเอง)</span>
+            </button>
+            <button
+              onClick={handleResetDefaults}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
+              <span>โหลดตัวอย่าง (Default Demo)</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

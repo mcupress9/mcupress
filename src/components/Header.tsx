@@ -2,14 +2,10 @@ import React, { useState } from 'react';
 import {
   Menu,
   Bell,
-  Crown,
-  ShieldCheck,
-  UserCheck,
   AlertTriangle,
   CheckCircle2,
   ChevronRight,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   onOpenMobileMenu: () => void;
@@ -23,10 +19,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMobileMenu,
   lowStockCount,
   onNavigateToStock,
-  currentTabTitle = 'Dashboard',
+  currentTabTitle = 'หน้าหลัก',
   subtitle = 'ภาพรวมระบบสต๊อกหนังสือ สำนักพิมพ์ มจร.',
 }) => {
-  const { currentUser } = useAuth();
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
 
   return (
@@ -131,44 +126,6 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
           </div>
-
-          {/* User Profile Card: พระมหาคณัย สุมน, ดร. / ผู้ดูแลระบบ (Admin) */}
-          {currentUser && (
-            <div className="flex items-center gap-2.5 px-3 py-1.5 bg-white border border-[#F3DDE7] hover:border-[#ED1760]/40 rounded-[16px] shadow-2xs transition-colors">
-              <div className="relative">
-                <div
-                  className={`w-8 h-8 rounded-[10px] flex items-center justify-center font-bold text-xs shadow-xs text-white ${
-                    currentUser.role === 'Admin'
-                      ? 'bg-[#ED1760]'
-                      : currentUser.role === 'Manager'
-                      ? 'bg-[#D41456]'
-                      : 'bg-slate-700'
-                  }`}
-                >
-                  {currentUser.role === 'Admin' ? (
-                    <Crown className="w-4 h-4 text-white" />
-                  ) : currentUser.role === 'Manager' ? (
-                    <ShieldCheck className="w-4 h-4 text-white" />
-                  ) : (
-                    <UserCheck className="w-4 h-4 text-white" />
-                  )}
-                </div>
-              </div>
-
-              <div className="hidden sm:block text-left">
-                <div className="text-xs font-bold text-[#111827] line-clamp-1 max-w-[140px]">
-                  {currentUser.name}
-                </div>
-                <div className="text-[10px] font-medium text-[#64748B]">
-                  {currentUser.role === 'Admin'
-                    ? 'ผู้ดูแลระบบ (Admin)'
-                    : currentUser.role === 'Manager'
-                    ? 'หัวหน้างาน (Manager)'
-                    : 'เจ้าหน้าที่ (Staff)'}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </header>

@@ -107,7 +107,7 @@ export const BookDetailPage: React.FC<BookDetailPageProps> = ({
             <button
               onClick={onDelete}
               className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
-              title="ลบรายการหนังสือ (Admin)"
+              title="ลบรายการหนังสือ"
             >
               <Trash2 className="w-4 h-4" />
             </button>

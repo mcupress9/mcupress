@@ -5,16 +5,10 @@ import {
   PlusCircle,
   PackageCheck,
   BarChart4,
-  Users2,
   Settings2,
-  LogOut,
   X,
   GraduationCap,
-  ShieldCheck,
-  UserCheck,
-  Crown,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 
 export type NavTab =
   | 'dashboard'
@@ -22,7 +16,6 @@ export type NavTab =
   | 'add-book'
   | 'stock'
   | 'summary'
-  | 'users'
   | 'settings';
 
 interface SidebarProps {
@@ -38,8 +31,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
 }) => {
-  const { currentUser, logout } = useAuth();
-
   const navItems = [
     {
       id: 'dashboard' as NavTab,
@@ -70,12 +61,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'สรุปข้อมูล',
       icon: BarChart4,
       description: 'รายงาน & ส่งออก Excel',
-    },
-    {
-      id: 'users' as NavTab,
-      label: 'ผู้ใช้งาน',
-      icon: Users2,
-      description: 'จัดการบัญชีและสิทธิ์',
     },
     {
       id: 'settings' as NavTab,
@@ -171,52 +156,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
       </nav>
-
-      {/* User Info & Logout Footer */}
-      <div className="p-3.5 border-t border-[#F3DDE7] bg-white">
-        {currentUser && (
-          <div className="bg-[#FCF8FA] p-2.5 rounded-[14px] border border-[#F3DDE7] mb-2.5">
-            <div className="flex items-center gap-2.5">
-              <div
-                className={`w-9 h-9 rounded-[10px] flex items-center justify-center font-bold text-xs shadow-xs flex-shrink-0 ${
-                  currentUser.role === 'Admin'
-                    ? 'bg-[#ED1760] text-white'
-                    : currentUser.role === 'Manager'
-                    ? 'bg-[#D41456] text-white'
-                    : 'bg-slate-700 text-white'
-                }`}
-              >
-                {currentUser.role === 'Admin' ? (
-                  <Crown className="w-4.5 h-4.5 text-white" />
-                ) : currentUser.role === 'Manager' ? (
-                  <ShieldCheck className="w-4.5 h-4.5 text-white" />
-                ) : (
-                  <UserCheck className="w-4.5 h-4.5 text-white" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold text-[#111827] truncate">
-                  {currentUser.name}
-                </div>
-                <div className="flex items-center gap-1 text-[10px] font-semibold text-[#ED1760] mt-0.5">
-                  <span>ผู้ดูแลระบบ ({currentUser.role})</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <button
-          onClick={() => {
-            logout();
-            onCloseMobile();
-          }}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-[12px] text-xs font-bold text-[#ED1760] hover:text-white bg-[#FCE7F3] hover:bg-[#ED1760] border border-[#F3DDE7] transition-all duration-150 cursor-pointer group"
-        >
-          <LogOut className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-          <span>ออกจากระบบ</span>
-        </button>
-      </div>
     </div>
   );
 

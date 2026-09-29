@@ -550,7 +550,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                     <button
                       onClick={() => onDeleteBook(book)}
                       className="p-1.5 rounded-[10px] text-[#64748B] hover:text-[#EF4444] hover:bg-[#FEF2F2] border border-[#F3DDE7] transition-colors cursor-pointer"
-                      title="ลบหนังสือ (เฉพาะ Admin)"
+                      title="ลบหนังสือ"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -836,6 +836,15 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                                     title="แก้ไขข้อมูล"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {canDeleteBook && (
+                                  <button
+                                    onClick={() => onDeleteBook(book)}
+                                    className="p-1 rounded-[8px] text-[#EF4444] bg-[#FEF2F2] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
+                                    title="ลบหนังสือ"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
                               </div>
