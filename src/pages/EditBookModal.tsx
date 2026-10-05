@@ -6,6 +6,7 @@ import {
   UploadCloud,
   Save,
   BookOpen,
+  Flame,
 } from 'lucide-react';
 import { Book } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +37,8 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
   const [coverImage, setCoverImage] = useState(book.cover_image);
   const [category, setCategory] = useState(book.category || 'พระไตรปิฎกและคัมภีร์ศึกษา');
   const [description, setDescription] = useState(book.description || '');
+  const [isBestseller, setIsBestseller] = useState(book.is_bestseller || false);
+  const [salesCount, setSalesCount] = useState((book.sales_count || 0).toString());
 
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState('');
@@ -109,6 +112,8 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
             cover_image: coverImage,
             category,
             description: description.trim(),
+            is_bestseller: isBestseller,
+            sales_count: parseInt(salesCount, 10) || 0,
           },
           currentUser?.name || 'เจ้าหน้าที่'
         );
@@ -131,26 +136,26 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl border border-rose-100/90 shadow-2xl overflow-hidden my-8 animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-white rounded-xl sm:rounded-3xl border border-rose-100/90 shadow-2xl overflow-hidden my-4 sm:my-8 animate-in zoom-in-95 duration-200">
         {/* Modal Header */}
-        <div className="px-6 py-5 border-b border-rose-100 bg-gradient-to-r from-rose-50/50 via-pink-50/30 to-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-700 flex items-center justify-center border border-rose-100 shadow-xs">
-              <BookOpen className="w-5 h-5" />
+        <div className="px-3.5 py-3 sm:px-6 sm:py-5 border-b border-rose-100 bg-gradient-to-r from-rose-50/50 via-pink-50/30 to-white flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-rose-50 text-rose-700 flex items-center justify-center border border-rose-100 shadow-xs flex-shrink-0">
+              <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-slate-900">
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
                 แก้ไขข้อมูลสิ่งพิมพ์
               </h3>
-              <p className="text-xs text-slate-400">รหัสสิ่งพิมพ์: {book.id}</p>
+              <p className="text-[10px] sm:text-xs text-slate-400">รหัสสิ่งพิมพ์: {book.id}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
@@ -178,13 +183,13 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
         )}
 
         {/* Modal Form */}
-        <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSave} className="p-3.5 sm:p-6 space-y-3 sm:space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Cover thumbnail & upload */}
-          <div className="flex items-center gap-4 p-4 rounded-3xl bg-slate-50/70 border border-slate-200/80">
+          <div className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-4 rounded-xl sm:rounded-3xl bg-slate-50/70 border border-slate-200/80">
             <img
               src={coverImage}
               alt="Cover Preview"
-              className="w-16 h-22 object-cover rounded-md shadow-xs border border-slate-200 flex-shrink-0"
+              className="w-12 h-16 sm:w-16 sm:h-22 object-cover rounded-md shadow-xs border border-slate-200 flex-shrink-0"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
                   'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200';
@@ -336,6 +341,51 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2.5 rounded-2xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none transition-all shadow-xs"
             />
+          </div>
+
+          {/* Bestseller Settings */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-50/50 via-white to-pink-50/40 border border-rose-100 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#ED1760] text-white flex items-center justify-center">
+                  <Flame className="w-4 h-4 fill-white" />
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm font-extrabold text-slate-900">
+                    ตั้งเป็นหนังสือขายดี (Best Seller)
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    ติดป้าย &quot;ขายดี&quot; และแสดงในส่วนหนังสือยอดนิยม
+                  </div>
+                </div>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isBestseller}
+                  onChange={(e) => setIsBestseller(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ED1760]"></div>
+              </label>
+            </div>
+
+            {isBestseller && (
+              <div className="pt-2 border-t border-rose-100">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ยอดจำหน่ายสะสม (เล่ม)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={salesCount}
+                  onChange={(e) => setSalesCount(e.target.value)}
+                  placeholder="เช่น 1450"
+                  className="w-full sm:w-60 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760]"
+                />
+              </div>
+            )}
           </div>
 
           {/* Footer Action */}

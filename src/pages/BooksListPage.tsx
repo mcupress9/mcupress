@@ -18,6 +18,8 @@ import {
   Boxes,
   Coins,
   CheckCircle2,
+  Flame,
+  Sparkles,
 } from 'lucide-react';
 import { Book } from '../types';
 import { StockBadge } from '../components/StockBadge';
@@ -46,6 +48,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedPriceRange, setSelectedPriceRange] = useState<string>('all');
+  const [onlyBestseller, setOnlyBestseller] = useState<boolean>(false);
   const [collapsedYears, setCollapsedYears] = useState<Record<number, boolean>>({});
 
   const toggleYearCollapse = (year: number) => {
@@ -114,9 +117,14 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
       if (selectedPriceRange === '200_400' && (price < 200 || price > 400)) return false;
       if (selectedPriceRange === 'above_400' && price <= 400) return false;
 
+      // 5. Bestseller Filter
+      if (onlyBestseller && !book.is_bestseller && (!book.sales_count || book.sales_count < 500)) {
+        return false;
+      }
+
       return true;
     });
-  }, [books, searchQuery, selectedStatus, selectedYear, selectedPriceRange]);
+  }, [books, searchQuery, selectedStatus, selectedYear, selectedPriceRange, onlyBestseller]);
 
   // Grouped by year for 'by_year' mode
   const groupedByYear = useMemo(() => {
@@ -171,40 +179,42 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
     setSelectedStatus('all');
     setSelectedYear('all');
     setSelectedPriceRange('all');
+    setOnlyBestseller(false);
   };
 
   const isFiltered =
     searchQuery.trim() !== '' ||
     selectedStatus !== 'all' ||
     selectedYear !== 'all' ||
-    selectedPriceRange !== 'all';
+    selectedPriceRange !== 'all' ||
+    onlyBestseller;
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-3 sm:space-y-6 pb-8 sm:pb-12">
       {/* Top Action & Search Bar */}
-      <div className="bg-white p-6 rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white p-3 sm:p-6 rounded-xl sm:rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] space-y-2.5 sm:space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl sm:text-2xl font-extrabold text-[#111827] tracking-tight">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <h2 className="text-base sm:text-2xl font-extrabold text-[#111827] tracking-tight">
                 แคตตาล็อกหนังสือทั้งหมด
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7]">
+              <span className="px-2 py-0.2 sm:px-2.5 sm:py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7]">
                 {filteredBooks.length} / {books.length} รายการ
               </span>
             </div>
-            <p className="text-xs text-[#64748B] mt-0.5">
+            <p className="text-[10px] sm:text-xs text-[#64748B] mt-0.5 hidden sm:block">
               สำนักพิมพ์มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย — ค้นหา ตรวจสอบสต๊อก และจัดการสิ่งพิมพ์
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
             {/* View Mode Toggle: Grid | Table | Grouped By Year */}
-            <div className="flex items-center bg-[#FCF8FA] p-1 rounded-[12px] border border-[#F3DDE7]">
+            <div className="flex items-center bg-[#FCF8FA] p-0.5 sm:p-1 rounded-lg sm:rounded-[12px] border border-[#F3DDE7]">
               <button
                 type="button"
                 onClick={() => setViewMode('grid')}
-                className={`p-1.5 px-2.5 rounded-[10px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`p-1 sm:p-1.5 px-2 sm:px-2.5 rounded-md sm:rounded-[10px] text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'grid'
                     ? 'bg-white text-[#ED1760] shadow-2xs'
                     : 'text-[#64748B] hover:text-[#111827]'
@@ -217,7 +227,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
               <button
                 type="button"
                 onClick={() => setViewMode('table')}
-                className={`p-1.5 px-2.5 rounded-[10px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`p-1 sm:p-1.5 px-2 sm:px-2.5 rounded-md sm:rounded-[10px] text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'table'
                     ? 'bg-white text-[#ED1760] shadow-2xs'
                     : 'text-[#64748B] hover:text-[#111827]'
@@ -230,7 +240,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
               <button
                 type="button"
                 onClick={() => setViewMode('by_year')}
-                className={`p-1.5 px-2.5 rounded-[10px] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`p-1 sm:p-1.5 px-2 sm:px-2.5 rounded-md sm:rounded-[10px] text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
                   viewMode === 'by_year'
                     ? 'bg-[#ED1760] text-white shadow-2xs'
                     : 'text-[#64748B] hover:text-[#111827]'
@@ -245,59 +255,59 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
             {/* Add Book Button */}
             <button
               onClick={onNavigateToAddBook}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-[14px] bg-[#ED1760] hover:bg-[#D41456] text-white text-xs sm:text-sm font-bold shadow-sm shadow-[#ED1760]/20 transition-all duration-150 cursor-pointer"
+              className="inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-[14px] bg-[#ED1760] hover:bg-[#D41456] text-white text-xs sm:text-sm font-bold shadow-sm shadow-[#ED1760]/20 transition-all duration-150 cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>เพิ่มหนังสือใหม่</span>
             </button>
           </div>
         </div>
 
         {/* Search Bar & Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1">
+        <div className="grid grid-cols-2 md:grid-cols-12 gap-2 sm:gap-3 pt-1">
           {/* Search Input */}
-          <div className="md:col-span-5 relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <Search className="w-4 h-4" />
+          <div className="col-span-2 md:col-span-3 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ค้นหาจากชื่อหนังสือ, ผู้แต่ง, หรือ ISBN..."
-              className="w-full pl-10 pr-9 py-2 rounded-[14px] border border-[#F3DDE7] bg-[#FCF8FA] focus:bg-white text-sm text-[#111827] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760] transition-all"
+              placeholder="ค้นหาชื่อหนังสือ, ผู้แต่ง, หรือ ISBN..."
+              className="w-full pl-8 sm:pl-10 pr-8 sm:pr-9 py-1.5 sm:py-2 rounded-lg sm:rounded-[14px] border border-[#F3DDE7] bg-[#FCF8FA] focus:bg-white text-xs sm:text-sm text-[#111827] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760] transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#ED1760] cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-[#ED1760] cursor-pointer"
                 title="ล้างคำค้นหา"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             )}
           </div>
 
           {/* Filter 1: สถานะสต๊อก */}
-          <div className="md:col-span-2">
+          <div className="col-span-1 md:col-span-2">
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full py-2 px-3 rounded-[14px] border border-[#F3DDE7] bg-[#FCF8FA] focus:bg-white text-xs sm:text-sm text-[#111827] font-medium focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760] cursor-pointer"
+              className="w-full py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg sm:rounded-[14px] border border-[#F3DDE7] bg-[#FCF8FA] focus:bg-white text-xs sm:text-sm text-[#111827] font-medium focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760] cursor-pointer truncate"
             >
-              <option value="all">สถานะสต๊อกทั้งหมด</option>
-              <option value="in_stock">มีสินค้า (&gt; 10 เล่ม)</option>
-              <option value="low_stock">ใกล้หมด (1 - 10 เล่ม)</option>
-              <option value="out_of_stock">หมดสต๊อก (0 เล่ม)</option>
+              <option value="all">สต๊อกทั้งหมด</option>
+              <option value="in_stock">มีสินค้า (&gt; 10)</option>
+              <option value="low_stock">ใกล้หมด (1-10)</option>
+              <option value="out_of_stock">หมดสต๊อก (0)</option>
             </select>
           </div>
 
           {/* Filter 2: ปีที่พิมพ์ */}
-          <div className="md:col-span-2">
+          <div className="col-span-1 md:col-span-2">
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full py-2 px-3 rounded-[14px] border border-[#F3DDE7] bg-[#FCF8FA] focus:bg-white text-xs sm:text-sm text-[#111827] font-medium focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760] cursor-pointer"
+              className="w-full py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg sm:rounded-[14px] border border-[#F3DDE7] bg-[#FCF8FA] focus:bg-white text-xs sm:text-sm text-[#111827] font-medium focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760] cursor-pointer truncate"
             >
               <option value="all">ปีที่พิมพ์ทั้งหมด</option>
               {availableYears.map((yr) => (
@@ -309,57 +319,69 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
           </div>
 
           {/* Filter 3: ช่วงราคา */}
-          <div className="md:col-span-2">
+          <div className="col-span-1 md:col-span-2">
             <select
               value={selectedPriceRange}
               onChange={(e) => setSelectedPriceRange(e.target.value)}
-              className="w-full py-2 px-3 rounded-[14px] border border-[#F3DDE7] bg-[#FCF8FA] focus:bg-white text-xs sm:text-sm text-[#111827] font-medium focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760] cursor-pointer"
+              className="w-full py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg sm:rounded-[14px] border border-[#F3DDE7] bg-[#FCF8FA] focus:bg-white text-xs sm:text-sm text-[#111827] font-medium focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760] cursor-pointer truncate"
             >
               <option value="all">ทุกช่วงราคา</option>
-              <option value="under_200">ต่ำกว่า ฿200</option>
+              <option value="under_200">&lt; ฿200</option>
               <option value="200_400">฿200 - ฿400</option>
-              <option value="above_400">มากกว่า ฿400</option>
+              <option value="above_400">&gt; ฿400</option>
             </select>
           </div>
 
+          {/* Filter 4: ปุ่มหนังสือขายดี */}
+          <div className="col-span-1 md:col-span-2">
+            <button
+              type="button"
+              onClick={() => setOnlyBestseller(!onlyBestseller)}
+              className={`w-full py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg sm:rounded-[14px] text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer shadow-2xs truncate ${
+                onlyBestseller
+                  ? 'bg-gradient-to-r from-[#ED1760] to-[#FF6584] text-white border-[#ED1760] shadow-sm shadow-[#ED1760]/25'
+                  : 'bg-white hover:bg-[#FCE7F3] text-slate-700 hover:text-[#ED1760] border-[#F3DDE7]'
+              }`}
+            >
+              <Flame className={`w-3.5 h-3.5 ${onlyBestseller ? 'fill-white' : 'text-[#ED1760]'}`} />
+              <span>ขายดี</span>
+            </button>
+          </div>
+
           {/* Reset button */}
-          <div className="md:col-span-1 flex items-center">
+          <div className="col-span-2 md:col-span-1 flex items-center">
             {isFiltered ? (
               <button
                 onClick={handleResetFilters}
-                className="w-full py-2 px-2 rounded-[14px] bg-[#FCE7F3] hover:bg-[#ED1760] text-[#ED1760] hover:text-white text-xs font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer border border-[#F3DDE7]"
+                className="w-full py-1.5 sm:py-2 px-2 rounded-lg sm:rounded-[14px] bg-[#FCE7F3] hover:bg-[#ED1760] text-[#ED1760] hover:text-white text-xs font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer border border-[#F3DDE7]"
                 title="ล้างตัวกรอง"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">ล้าง</span>
+                <span>ล้างตัวกรอง</span>
               </button>
-            ) : (
-              <div className="w-full py-2 px-2 text-center text-slate-300 text-xs font-semibold">
-                —
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
 
         {/* YEARLY STOCK QUICK FILTER RIBBON (สรุปสต๊อกของแต่ละปี) */}
-        <div className="pt-2 border-t border-[#F3DDE7]/50 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <span className="text-xs font-bold text-[#64748B] flex-shrink-0 flex items-center gap-1 mr-1">
-            <Calendar className="w-3.5 h-3.5 text-[#ED1760]" />
-            <span>สต๊อกแต่ละปี:</span>
+        <div className="pt-2 border-t border-[#F3DDE7]/50 flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-0.5 sm:pb-1 scrollbar-none">
+          <span className="text-[10px] sm:text-xs font-bold text-[#64748B] flex-shrink-0 flex items-center gap-1 mr-0.5 sm:mr-1">
+            <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#ED1760]" />
+            <span>สต๊อกรายปี:</span>
           </span>
 
           <button
             type="button"
             onClick={() => setSelectedYear('all')}
-            className={`px-3 py-1.5 rounded-[12px] text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1.5 ${
+            className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-[12px] text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1 sm:gap-1.5 ${
               selectedYear === 'all'
                 ? 'bg-[#ED1760] text-white shadow-xs'
                 : 'bg-[#FCF8FA] text-[#64748B] hover:text-[#ED1760] border border-[#F3DDE7]'
             }`}
           >
-            <span>ทั้งหมดทุกปี</span>
+            <span>ทั้งหมด</span>
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+              className={`text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.2 rounded-full font-bold ${
                 selectedYear === 'all'
                   ? 'bg-white/20 text-white'
                   : 'bg-[#FCE7F3] text-[#ED1760]'
@@ -376,7 +398,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                 key={item.year}
                 type="button"
                 onClick={() => setSelectedYear(isSelected ? 'all' : item.year.toString())}
-                className={`px-3 py-1.5 rounded-[12px] text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1.5 ${
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-[12px] text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1 sm:gap-1.5 ${
                   isSelected
                     ? 'bg-[#ED1760] text-white shadow-xs'
                     : 'bg-white text-[#111827] hover:text-[#ED1760] border border-[#F3DDE7] hover:border-[#ED1760]/30'
@@ -384,20 +406,13 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
               >
                 <span>{item.yearLabel}</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  className={`text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.2 rounded-full font-bold ${
                     isSelected
                       ? 'bg-white/20 text-white'
                       : 'bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]'
                   }`}
                 >
-                  สต๊อก {item.copies} เล่ม
-                </span>
-                <span
-                  className={`text-[10px] ${
-                    isSelected ? 'text-white/80' : 'text-[#64748B]'
-                  }`}
-                >
-                  ({item.titles} ชื่อ · {formatBaht(item.value)})
+                  {item.copies} เล่ม
                 </span>
               </button>
             );
@@ -452,11 +467,11 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
 
       {/* VIEW MODE 1: GRID CARDS */}
       {viewMode === 'grid' && filteredBooks.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-5">
           {filteredBooks.map((book) => (
             <div
               key={book.id}
-              className="bg-white rounded-[18px] border border-[#F3DDE7] hover:border-[#ED1760]/40 shadow-[0_4px_16px_rgba(237,23,96,0.03)] hover:shadow-md transition-all duration-150 flex flex-col justify-between overflow-hidden group relative"
+              className="bg-white rounded-xl sm:rounded-[18px] border border-[#F3DDE7] hover:border-[#ED1760]/40 shadow-[0_4px_16px_rgba(237,23,96,0.03)] hover:shadow-md transition-all duration-150 flex flex-col justify-between overflow-hidden group relative"
             >
               {/* Cover Aspect 3:4 */}
               <div
@@ -472,87 +487,93 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                       'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400';
                   }}
                 />
-                <div className="absolute top-2.5 right-2.5">
+                <div className="absolute top-1.5 right-1.5 sm:top-2.5 sm:right-2.5 flex items-center gap-1 sm:gap-1.5">
+                  {(book.is_bestseller || (book.sales_count && book.sales_count >= 500)) && (
+                    <span className="inline-flex items-center gap-0.5 px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded-[4px] sm:rounded-[6px] bg-gradient-to-r from-amber-500 to-[#ED1760] text-white text-[8px] sm:text-[9px] font-extrabold shadow-sm">
+                      <Flame className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-white" />
+                      <span>ขายดี</span>
+                    </span>
+                  )}
                   <StockBadge quantity={book.stock_quantity} size="sm" />
                 </div>
-                <div className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-[6px] bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold">
+                <div className="absolute bottom-1.5 left-1.5 sm:bottom-2.5 sm:left-2.5 px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-[4px] sm:rounded-[6px] bg-black/60 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-bold">
                   พ.ศ. {book.published_year}
                 </div>
               </div>
 
               {/* Book Info Body */}
-              <div className="p-4 flex-1 flex flex-col justify-between">
+              <div className="p-2 sm:p-4 flex-1 flex flex-col justify-between">
                 <div>
                   <h3
                     onClick={() => onSelectBook(book)}
-                    className="text-sm font-extrabold text-[#111827] group-hover:text-[#ED1760] line-clamp-2 cursor-pointer leading-snug transition-colors"
+                    className="text-xs sm:text-sm font-extrabold text-[#111827] group-hover:text-[#ED1760] line-clamp-2 cursor-pointer leading-snug transition-colors"
                     title={book.book_name}
                   >
                     {book.book_name}
                   </h3>
-                  <p className="text-xs text-[#64748B] line-clamp-1 mt-1 font-medium">
+                  <p className="text-[10px] sm:text-xs text-[#64748B] line-clamp-1 mt-0.5 sm:mt-1 font-medium">
                     {book.author}
                   </p>
-                  <div className="text-[11px] text-[#64748B] mt-1 flex items-center justify-between">
-                    <span>ISBN: {book.isbn || '-'}</span>
-                    <span>{book.pages} หน้า</span>
+                  <div className="text-[9px] sm:text-[11px] text-[#64748B] mt-0.5 sm:mt-1 flex items-center justify-between">
+                    <span className="truncate">ISBN: {book.isbn || '-'}</span>
+                    <span className="flex-shrink-0 ml-1">{book.pages} น.</span>
                   </div>
                 </div>
 
                 {/* Stock & Price */}
-                <div className="mt-3 pt-2.5 border-t border-[#F3DDE7]/50 flex items-center justify-between">
+                <div className="mt-1.5 sm:mt-3 pt-1.5 sm:pt-2.5 border-t border-[#F3DDE7]/50 flex items-center justify-between">
                   <div>
-                    <div className="text-[10px] font-semibold text-[#64748B]">คงเหลือ</div>
-                    <div className="text-sm font-extrabold text-[#111827] tabular-nums">
-                      {book.stock_quantity} <span className="text-[10px] font-normal text-[#64748B]">เล่ม</span>
+                    <div className="text-[8px] sm:text-[10px] font-semibold text-[#64748B]">คงเหลือ</div>
+                    <div className="text-xs sm:text-sm font-extrabold text-[#111827] tabular-nums">
+                      {book.stock_quantity} <span className="text-[8px] sm:text-[10px] font-normal text-[#64748B]">เล่ม</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] font-semibold text-[#64748B]">ราคาเล่มละ</div>
-                    <div className="text-sm font-extrabold text-[#ED1760] tabular-nums">
+                    <div className="text-[8px] sm:text-[10px] font-semibold text-[#64748B]">ราคา</div>
+                    <div className="text-xs sm:text-sm font-extrabold text-[#ED1760] tabular-nums">
                       {formatBaht(book.price)}
                     </div>
                   </div>
                 </div>
 
                 {/* Actions Bar */}
-                <div className="mt-3 pt-2.5 border-t border-[#F3DDE7]/50 flex items-center justify-between gap-1.5">
+                <div className="mt-1.5 sm:mt-3 pt-1.5 sm:pt-2.5 border-t border-[#F3DDE7]/50 flex items-center justify-between gap-1 sm:gap-1.5">
                   <button
                     onClick={() => onSelectBook(book)}
-                    className="flex-1 py-1.5 px-2 rounded-[10px] bg-[#FCE7F3] hover:bg-[#ED1760] text-[#ED1760] hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    className="flex-1 py-1 sm:py-1.5 px-1 sm:px-2 rounded-lg sm:rounded-[10px] bg-[#FCE7F3] hover:bg-[#ED1760] text-[#ED1760] hover:text-white text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer truncate"
                     title="ดูรายละเอียดเล่มนี้"
                   >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>รายละเอียด</span>
+                    <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <span>ดู</span>
                   </button>
 
                   {onQuickStockAdjust && (
                     <button
                       onClick={() => onQuickStockAdjust(book)}
-                      className="p-1.5 rounded-[10px] text-[#64748B] hover:text-[#10B981] hover:bg-[#ECFDF5] border border-[#F3DDE7] transition-colors cursor-pointer"
+                      className="p-1 sm:p-1.5 rounded-lg sm:rounded-[10px] text-[#64748B] hover:text-[#10B981] hover:bg-[#ECFDF5] border border-[#F3DDE7] transition-colors cursor-pointer"
                       title="รับเข้า / ปรับสต๊อกเล่มนี้"
                     >
-                      <PackagePlus className="w-3.5 h-3.5" />
+                      <PackagePlus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </button>
                   )}
 
                   {canEditBook && (
                     <button
                       onClick={() => onEditBook(book)}
-                      className="p-1.5 rounded-[10px] text-[#64748B] hover:text-[#3B82F6] hover:bg-blue-50 border border-[#F3DDE7] transition-colors cursor-pointer"
+                      className="p-1 sm:p-1.5 rounded-lg sm:rounded-[10px] text-[#64748B] hover:text-[#3B82F6] hover:bg-blue-50 border border-[#F3DDE7] transition-colors cursor-pointer"
                       title="แก้ไขข้อมูลหนังสือ"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </button>
                   )}
 
                   {canDeleteBook && (
                     <button
                       onClick={() => onDeleteBook(book)}
-                      className="p-1.5 rounded-[10px] text-[#64748B] hover:text-[#EF4444] hover:bg-[#FEF2F2] border border-[#F3DDE7] transition-colors cursor-pointer"
+                      className="p-1 sm:p-1.5 rounded-lg sm:rounded-[10px] text-[#64748B] hover:text-[#EF4444] hover:bg-[#FEF2F2] border border-[#F3DDE7] transition-colors cursor-pointer"
                       title="ลบหนังสือ"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </button>
                   )}
                 </div>
@@ -564,30 +585,30 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
 
       {/* VIEW MODE 2: TABLE */}
       {viewMode === 'table' && filteredBooks.length > 0 && (
-        <div className="bg-white rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] overflow-hidden">
+        <div className="bg-white rounded-xl sm:rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[#FCF8FA] text-xs text-[#64748B] font-bold border-b border-[#F3DDE7]">
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead className="bg-[#FCF8FA] text-[10px] sm:text-xs text-[#64748B] font-bold border-b border-[#F3DDE7]">
                 <tr>
-                  <th className="px-5 py-3.5 w-16">ปก</th>
-                  <th className="px-5 py-3.5">ชื่อหนังสือ</th>
-                  <th className="px-5 py-3.5">ผู้แต่ง</th>
-                  <th className="px-5 py-3.5">หน้า</th>
-                  <th className="px-5 py-3.5">ISBN</th>
-                  <th className="px-5 py-3.5">ปีพิมพ์</th>
-                  <th className="px-5 py-3.5">ราคาปก</th>
-                  <th className="px-5 py-3.5">คงเหลือ</th>
-                  <th className="px-5 py-3.5">สถานะ</th>
-                  <th className="px-5 py-3.5 text-right">การจัดการ</th>
+                  <th className="px-2.5 sm:px-5 py-2 sm:py-3.5 w-12 sm:w-16">ปก</th>
+                  <th className="px-2.5 sm:px-5 py-2 sm:py-3.5">ชื่อหนังสือ</th>
+                  <th className="px-2.5 sm:px-5 py-2 sm:py-3.5">ผู้แต่ง</th>
+                  <th className="px-2.5 sm:px-5 py-2 sm:py-3.5">หน้า</th>
+                  <th className="px-2.5 sm:px-5 py-2 sm:py-3.5">ISBN</th>
+                  <th className="px-2.5 sm:px-5 py-2 sm:py-3.5">ปีพิมพ์</th>
+                  <th className="px-2.5 sm:px-5 py-2 sm:py-3.5">ราคาปก</th>
+                  <th className="px-2.5 sm:px-5 py-2 sm:py-3.5">คงเหลือ</th>
+                  <th className="px-2.5 sm:px-5 py-2 sm:py-3.5">สถานะ</th>
+                  <th className="px-2.5 sm:px-5 py-2 sm:py-3.5 text-right">การจัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F3DDE7]/50">
                 {filteredBooks.map((book) => (
                   <tr key={book.id} className="hover:bg-[#FCE7F3]/20 transition-colors">
-                    <td className="px-5 py-3 w-16">
+                    <td className="px-2.5 sm:px-5 py-2 sm:py-3 w-12 sm:w-16">
                       <div
                         onClick={() => onSelectBook(book)}
-                        className="w-10 h-14 rounded-md overflow-hidden bg-slate-100 border border-[#F3DDE7] shadow-2xs flex-shrink-0 cursor-pointer hover:shadow-md transition-all relative"
+                        className="w-8 h-11 sm:w-10 sm:h-14 rounded-md overflow-hidden bg-slate-100 border border-[#F3DDE7] shadow-2xs flex-shrink-0 cursor-pointer hover:shadow-md transition-all relative"
                         title={book.book_name}
                       >
                         <img
@@ -601,39 +622,47 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                         />
                       </div>
                     </td>
-                    <td className="px-5 py-3 max-w-xs font-extrabold text-[#111827]">
-                      <button
-                        onClick={() => onSelectBook(book)}
-                        className="text-left line-clamp-1 hover:text-[#ED1760] transition-colors cursor-pointer"
-                      >
-                        {book.book_name}
-                      </button>
-                      <div className="text-[11px] font-normal text-[#64748B] mt-0.5">
+                    <td className="px-2.5 sm:px-5 py-2 sm:py-3 max-w-xs font-extrabold text-[#111827]">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          onClick={() => onSelectBook(book)}
+                          className="text-left line-clamp-1 hover:text-[#ED1760] transition-colors cursor-pointer text-xs sm:text-sm"
+                        >
+                          {book.book_name}
+                        </button>
+                        {(book.is_bestseller || (book.sales_count && book.sales_count >= 500)) && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-[6px] bg-gradient-to-r from-amber-500 to-[#ED1760] text-white text-[8px] sm:text-[9px] font-black flex-shrink-0">
+                            <Flame className="w-2.5 h-2.5 fill-white" />
+                            <span>ขายดี</span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] sm:text-[11px] font-normal text-[#64748B] mt-0.5">
                         {book.category || 'สิ่งพิมพ์วิชาการ'}
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-xs text-[#64748B]">{book.author}</td>
-                    <td className="px-5 py-3 text-xs text-[#64748B]">{book.pages}</td>
-                    <td className="px-5 py-3 text-xs text-[#64748B] font-mono">
+                    <td className="px-2.5 sm:px-5 py-2 sm:py-3 text-[11px] sm:text-xs text-[#64748B]">{book.author}</td>
+                    <td className="px-2.5 sm:px-5 py-2 sm:py-3 text-[11px] sm:text-xs text-[#64748B]">{book.pages}</td>
+                    <td className="px-2.5 sm:px-5 py-2 sm:py-3 text-[11px] sm:text-xs text-[#64748B] font-mono">
                       {book.isbn || '-'}
                     </td>
-                    <td className="px-5 py-3 text-xs text-[#111827] font-semibold">
+                    <td className="px-2.5 sm:px-5 py-2 sm:py-3 text-[11px] sm:text-xs text-[#111827] font-semibold">
                       พ.ศ. {book.published_year}
                     </td>
-                    <td className="px-5 py-3 font-semibold text-[#111827] tabular-nums">
+                    <td className="px-2.5 sm:px-5 py-2 sm:py-3 font-semibold text-[#111827] tabular-nums text-xs sm:text-sm">
                       {formatBaht(book.price)}
                     </td>
-                    <td className="px-5 py-3 font-bold text-[#111827] tabular-nums">
+                    <td className="px-2.5 sm:px-5 py-2 sm:py-3 font-bold text-[#111827] tabular-nums text-xs sm:text-sm">
                       {book.stock_quantity} เล่ม
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-2.5 sm:px-5 py-2 sm:py-3">
                       <StockBadge quantity={book.stock_quantity} size="sm" />
                     </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="px-2.5 sm:px-5 py-2 sm:py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => onSelectBook(book)}
-                          className="p-1.5 rounded-[8px] text-[#ED1760] bg-[#FCE7F3] hover:bg-[#ED1760] hover:text-white transition-colors cursor-pointer"
+                          className="p-1 sm:p-1.5 rounded-[6px] sm:rounded-[8px] text-[#ED1760] bg-[#FCE7F3] hover:bg-[#ED1760] hover:text-white transition-colors cursor-pointer"
                           title="ดูรายละเอียด"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -641,7 +670,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                         {onQuickStockAdjust && (
                           <button
                             onClick={() => onQuickStockAdjust(book)}
-                            className="p-1.5 rounded-[8px] text-[#10B981] bg-[#ECFDF5] hover:bg-[#10B981] hover:text-white transition-colors cursor-pointer"
+                            className="p-1 sm:p-1.5 rounded-[6px] sm:rounded-[8px] text-[#10B981] bg-[#ECFDF5] hover:bg-[#10B981] hover:text-white transition-colors cursor-pointer"
                             title="ปรับสต๊อก"
                           >
                             <PackagePlus className="w-3.5 h-3.5" />
@@ -650,7 +679,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                         {canEditBook && (
                           <button
                             onClick={() => onEditBook(book)}
-                            className="p-1.5 rounded-[8px] text-[#3B82F6] bg-blue-50 hover:bg-[#3B82F6] hover:text-white transition-colors cursor-pointer"
+                            className="p-1 sm:p-1.5 rounded-[6px] sm:rounded-[8px] text-[#3B82F6] bg-blue-50 hover:bg-[#3B82F6] hover:text-white transition-colors cursor-pointer"
                             title="แก้ไขข้อมูล"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -659,7 +688,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                         {canDeleteBook && (
                           <button
                             onClick={() => onDeleteBook(book)}
-                            className="p-1.5 rounded-[8px] text-[#EF4444] bg-[#FEF2F2] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
+                            className="p-1 sm:p-1.5 rounded-[6px] sm:rounded-[8px] text-[#EF4444] bg-[#FEF2F2] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
                             title="ลบข้อมูล"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -677,33 +706,33 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
 
       {/* VIEW MODE 3: GROUPED BY YEAR (ข้อมูลหนังสือแต่ละปี + สต๊อกแต่ละปี) */}
       {viewMode === 'by_year' && filteredBooks.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-6">
           {groupedByYear.map((yearGroup) => {
             const isCollapsed = collapsedYears[yearGroup.year] === true;
             return (
               <div
                 key={yearGroup.year}
-                className="bg-white rounded-[22px] border border-[#F3DDE7] shadow-2xs overflow-hidden"
+                className="bg-white rounded-xl sm:rounded-[22px] border border-[#F3DDE7] shadow-2xs overflow-hidden"
               >
                 {/* Year Header Banner */}
-                <div className="p-5 sm:p-6 bg-gradient-to-r from-[#FCF8FA] via-white to-[#FCE7F3]/25 border-b border-[#F3DDE7] flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="px-3.5 py-1.5 rounded-[12px] bg-[#ED1760] text-white font-black text-sm shadow-xs shadow-[#ED1760]/20 flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4" />
+                <div className="p-3 sm:p-6 bg-gradient-to-r from-[#FCF8FA] via-white to-[#FCE7F3]/25 border-b border-[#F3DDE7] flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-[12px] bg-[#ED1760] text-white font-black text-xs sm:text-sm shadow-xs shadow-[#ED1760]/20 flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+                      <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       <span>{yearGroup.yearLabel}</span>
                     </div>
 
                     <div>
-                      <h4 className="text-base font-extrabold text-[#111827]">
+                      <h4 className="text-xs sm:text-base font-extrabold text-[#111827]">
                         สิ่งพิมพ์ที่จัดพิมพ์ปี {yearGroup.year}
                       </h4>
-                      <div className="flex items-center gap-2 text-xs text-[#64748B] mt-0.5 flex-wrap">
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-[#64748B] mt-0.5 flex-wrap">
                         <span>
-                          จำนวน <strong>{yearGroup.titlesCount}</strong> ชื่อเรื่อง
+                          <strong>{yearGroup.titlesCount}</strong> ชื่อ
                         </span>
                         <span>·</span>
                         <span>
-                          สต๊อกรวม{' '}
+                          สต๊อก{' '}
                           <strong className="text-[#10B981] font-black">
                             {yearGroup.totalCopies}
                           </strong>{' '}
@@ -711,7 +740,6 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                         </span>
                         <span>·</span>
                         <span>
-                          มูลค่ารวม{' '}
                           <strong className="text-[#ED1760] font-black">
                             {formatBaht(yearGroup.totalValue)}
                           </strong>
@@ -721,27 +749,27 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                   </div>
 
                   {/* Badges & Collapse Toggle */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2.5 py-1 rounded-[10px] bg-[#ECFDF5] text-[#065F46] font-bold text-xs border border-[#A7F3D0]">
-                      มีสินค้า: {yearGroup.inStock}
+                  <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                    <span className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-[10px] bg-[#ECFDF5] text-[#065F46] font-bold text-[9px] sm:text-xs border border-[#A7F3D0]">
+                      มี: {yearGroup.inStock}
                     </span>
-                    <span className="px-2.5 py-1 rounded-[10px] bg-[#FFFBEB] text-[#92400E] font-bold text-xs border border-[#FDE68A]">
+                    <span className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-[10px] bg-[#FFFBEB] text-[#92400E] font-bold text-[9px] sm:text-xs border border-[#FDE68A]">
                       ใกล้หมด: {yearGroup.lowStock}
                     </span>
-                    <span className="px-2.5 py-1 rounded-[10px] bg-[#FEF2F2] text-[#991B1B] font-bold text-xs border border-[#FECACA]">
-                      หมดสต๊อก: {yearGroup.outOfStock}
+                    <span className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-[10px] bg-[#FEF2F2] text-[#991B1B] font-bold text-[9px] sm:text-xs border border-[#FECACA]">
+                      หมด: {yearGroup.outOfStock}
                     </span>
 
                     <button
                       type="button"
                       onClick={() => toggleYearCollapse(yearGroup.year)}
-                      className="p-1.5 rounded-[10px] text-[#64748B] hover:text-[#111827] hover:bg-[#FCF8FA] border border-[#F3DDE7] transition-colors cursor-pointer"
+                      className="p-1 sm:p-1.5 rounded-lg sm:rounded-[10px] text-[#64748B] hover:text-[#111827] hover:bg-[#FCF8FA] border border-[#F3DDE7] transition-colors cursor-pointer"
                       title={isCollapsed ? 'ขยายรายการ' : 'ย่อรายการ'}
                     >
                       {isCollapsed ? (
-                        <ChevronDown className="w-4 h-4" />
+                        <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       ) : (
-                        <ChevronUp className="w-4 h-4" />
+                        <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       )}
                     </button>
                   </div>
@@ -749,20 +777,20 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
 
                 {/* Books Grid under this year */}
                 {!isCollapsed && (
-                  <div className="p-5 sm:p-6 bg-[#FCF8FA]/30">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="p-2.5 sm:p-6 bg-[#FCF8FA]/30">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                       {yearGroup.books.map((book) => {
                         const lineValue = (book.stock_quantity || 0) * (book.price || 0);
                         return (
                           <div
                             key={book.id}
-                            className="bg-white rounded-[16px] border border-[#F3DDE7] hover:border-[#ED1760]/40 p-4 shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between"
+                            className="bg-white rounded-xl sm:rounded-[16px] border border-[#F3DDE7] hover:border-[#ED1760]/40 p-2.5 sm:p-4 shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between"
                           >
-                            <div className="flex gap-3">
+                            <div className="flex gap-2 sm:gap-3">
                               {/* Book Cover */}
                               <div
                                 onClick={() => onSelectBook(book)}
-                                className="w-16 h-22 rounded-lg overflow-hidden bg-slate-100 border border-[#F3DDE7] shadow-2xs flex-shrink-0 cursor-pointer relative"
+                                className="w-12 h-16 sm:w-16 sm:h-22 rounded-md sm:rounded-lg overflow-hidden bg-slate-100 border border-[#F3DDE7] shadow-2xs flex-shrink-0 cursor-pointer relative"
                               >
                                 <img
                                   src={book.cover_image}
@@ -784,29 +812,29 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                                 >
                                   {book.book_name}
                                 </h5>
-                                <p className="text-[11px] text-[#64748B] line-clamp-1 mt-0.5">
+                                <p className="text-[10px] sm:text-[11px] text-[#64748B] line-clamp-1 mt-0.5">
                                   {book.author}
                                 </p>
-                                <div className="text-[10px] text-[#64748B] mt-1">
+                                <div className="text-[9px] sm:text-[10px] text-[#64748B] mt-0.5">
                                   <span>{book.category || 'ทั่วไป'}</span> ·{' '}
                                   <span className="font-mono">{book.isbn || '-'}</span>
                                 </div>
 
-                                <div className="mt-2 flex items-center justify-between">
-                                  <span className="text-xs font-black text-[#ED1760] tabular-nums">
+                                <div className="mt-1 sm:mt-2 flex items-center justify-between">
+                                  <span className="text-xs sm:text-xs font-black text-[#ED1760] tabular-nums">
                                     {formatBaht(book.price)}
                                   </span>
-                                  <span className="text-[11px] text-[#64748B]">
-                                    มูลค่ารวม: <strong>{formatBaht(lineValue)}</strong>
+                                  <span className="text-[9px] sm:text-[11px] text-[#64748B]">
+                                    รวม: <strong>{formatBaht(lineValue)}</strong>
                                   </span>
                                 </div>
                               </div>
                             </div>
 
                             {/* Bottom Stock & Actions */}
-                            <div className="mt-3 pt-3 border-t border-[#F3DDE7]/50 flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-black text-[#111827] tabular-nums">
+                            <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-[#F3DDE7]/50 flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 sm:gap-2">
+                                <span className="text-[11px] sm:text-xs font-black text-[#111827] tabular-nums">
                                   สต๊อก: {book.stock_quantity} เล่ม
                                 </span>
                                 <StockBadge quantity={book.stock_quantity} size="sm" showIcon={false} />
@@ -815,7 +843,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => onSelectBook(book)}
-                                  className="p-1 px-2 rounded-[8px] bg-[#FCE7F3] hover:bg-[#ED1760] text-[#ED1760] hover:text-white text-[11px] font-bold transition-colors cursor-pointer"
+                                  className="p-1 px-1.5 sm:px-2 rounded-md sm:rounded-[8px] bg-[#FCE7F3] hover:bg-[#ED1760] text-[#ED1760] hover:text-white text-[10px] sm:text-[11px] font-bold transition-colors cursor-pointer"
                                   title="ดูรายละเอียด"
                                 >
                                   ดูข้อมูล
@@ -823,7 +851,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                                 {onQuickStockAdjust && (
                                   <button
                                     onClick={() => onQuickStockAdjust(book)}
-                                    className="p-1 rounded-[8px] text-[#10B981] bg-[#ECFDF5] hover:bg-[#10B981] hover:text-white transition-colors cursor-pointer"
+                                    className="p-1 rounded-md sm:rounded-[8px] text-[#10B981] bg-[#ECFDF5] hover:bg-[#10B981] hover:text-white transition-colors cursor-pointer"
                                     title="ปรับสต๊อก"
                                   >
                                     <PackagePlus className="w-3.5 h-3.5" />
@@ -832,7 +860,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                                 {canEditBook && (
                                   <button
                                     onClick={() => onEditBook(book)}
-                                    className="p-1 rounded-[8px] text-[#3B82F6] bg-blue-50 hover:bg-[#3B82F6] hover:text-white transition-colors cursor-pointer"
+                                    className="p-1 rounded-md sm:rounded-[8px] text-[#3B82F6] bg-blue-50 hover:bg-[#3B82F6] hover:text-white transition-colors cursor-pointer"
                                     title="แก้ไขข้อมูล"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
@@ -841,7 +869,7 @@ export const BooksListPage: React.FC<BooksListPageProps> = ({
                                 {canDeleteBook && (
                                   <button
                                     onClick={() => onDeleteBook(book)}
-                                    className="p-1 rounded-[8px] text-[#EF4444] bg-[#FEF2F2] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
+                                    className="p-1 rounded-md sm:rounded-[8px] text-[#EF4444] bg-[#FEF2F2] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
                                     title="ลบหนังสือ"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />

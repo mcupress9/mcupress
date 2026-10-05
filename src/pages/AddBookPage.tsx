@@ -9,6 +9,7 @@ import {
   X,
   RotateCcw,
   Save,
+  Flame,
 } from 'lucide-react';
 import { Book } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -18,25 +19,6 @@ interface AddBookPageProps {
   onSuccess: (book: Book) => void;
   onCancel: () => void;
 }
-
-const PRESET_COVERS = [
-  {
-    label: 'ปกวิชาการพุทธศาสน์ (ทอง-แดง)',
-    url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    label: 'ปกคัมภีร์ใบลาน-โบราณ',
-    url: 'https://images.unsplash.com/photo-1532012164546-f432f2e3edd3?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    label: 'ปกพุทธปรัชญาและสังคม',
-    url: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    label: 'ปกวิจัยและนวัตกรรม มจร',
-    url: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&auto=format&fit=crop&q=80',
-  },
-];
 
 export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel }) => {
   const { currentUser } = useAuth();
@@ -58,6 +40,8 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
     savedDraft?.category || 'พระไตรปิฎกและคัมภีร์ศึกษา'
   );
   const [description, setDescription] = useState(savedDraft?.description || '');
+  const [isBestseller, setIsBestseller] = useState(savedDraft?.isBestseller || false);
+  const [salesCount, setSalesCount] = useState(savedDraft?.salesCount || '0');
 
   const [hasRestoredDraft, setHasRestoredDraft] = useState(Boolean(savedDraft && (savedDraft.bookName || savedDraft.author)));
   const [draftSavedTime, setDraftSavedTime] = useState<string>('');
@@ -90,6 +74,8 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
         coverImage,
         category,
         description,
+        isBestseller,
+        salesCount,
         savedAt: new Date().toISOString(),
       });
       const now = new Date();
@@ -97,7 +83,7 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
         now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       );
     }
-  }, [bookName, author, pages, isbn, publishedYear, price, stockQuantity, coverImage, category, description]);
+  }, [bookName, author, pages, isbn, publishedYear, price, stockQuantity, coverImage, category, description, isBestseller, salesCount]);
 
   const handleClearDraft = () => {
     if (window.confirm('ท่านต้องการล้างข้อมูลแบบร่างที่กรอกไว้ทั้งหมดใช่หรือไม่?')) {
@@ -112,6 +98,8 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
       setCoverImage('');
       setCategory('พระไตรปิฎกและคัมภีร์ศึกษา');
       setDescription('');
+      setIsBestseller(false);
+      setSalesCount('0');
       setHasRestoredDraft(false);
       setDraftSavedTime('');
       setErrorMessages([]);
@@ -203,6 +191,8 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
             created_by: currentUser?.name || 'เจ้าหน้าที่สำนักพิมพ์',
             category,
             description: description.trim(),
+            is_bestseller: isBestseller,
+            sales_count: parseInt(salesCount, 10) || 0,
           },
           currentUser?.name || 'เจ้าหน้าที่สำนักพิมพ์'
         );
@@ -223,22 +213,22 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+    <div className="max-w-4xl mx-auto space-y-3 sm:space-y-6 pb-8 sm:pb-12">
       {/* Top Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="p-2.5 rounded-[12px] text-[#64748B] hover:text-[#ED1760] hover:bg-[#FCE7F3] border border-[#F3DDE7] transition-colors cursor-pointer"
+            className="p-2 sm:p-2.5 rounded-lg sm:rounded-[12px] text-[#64748B] hover:text-[#ED1760] hover:bg-[#FCE7F3] border border-[#F3DDE7] transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-[#111827] tracking-tight">
+            <h2 className="text-lg sm:text-2xl font-extrabold text-[#111827] tracking-tight">
               ลงทะเบียนเพิ่มหนังสือใหม่
             </h2>
-            <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
+            <p className="text-[11px] sm:text-sm text-[#64748B] mt-0.5">
               สำนักพิมพ์มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย
             </p>
           </div>
@@ -247,44 +237,44 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
 
       {/* Success Notification */}
       {successMessage && (
-        <div className="p-4 rounded-[16px] bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] flex items-center gap-3 shadow-2xs">
-          <CheckCircle2 className="w-5 h-5 text-[#10B981] flex-shrink-0" />
+        <div className="p-3 sm:p-4 rounded-xl sm:rounded-[16px] bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] flex items-center gap-2.5 sm:gap-3 shadow-2xs">
+          <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#10B981] flex-shrink-0" />
           <div>
-            <div className="font-bold text-sm">{successMessage}</div>
-            <div className="text-xs text-[#059669]">กำลังนำท่านไปยังรายละเอียดหนังสือ...</div>
+            <div className="font-bold text-xs sm:text-sm">{successMessage}</div>
+            <div className="text-[11px] sm:text-xs text-[#059669]">กำลังนำท่านไปยังรายละเอียดหนังสือ...</div>
           </div>
         </div>
       )}
 
       {/* Draft Notification Banner */}
       {hasRestoredDraft && !successMessage && (
-        <div className="p-3.5 rounded-[16px] bg-[#FCE7F3] border border-[#F3DDE7] text-[#ED1760] flex items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-2.5 text-xs font-semibold">
-            <Sparkles className="w-4 h-4 text-[#ED1760] flex-shrink-0" />
-            <span>
+        <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-[16px] bg-[#FCE7F3] border border-[#F3DDE7] text-[#ED1760] flex items-center justify-between gap-2.5 sm:gap-3 shadow-2xs">
+          <div className="flex items-center gap-2 text-xs font-semibold">
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ED1760] flex-shrink-0" />
+            <span className="text-[11px] sm:text-xs">
               ระบบได้กู้คืนข้อมูลแบบร่างอัตโนมัติล่าสุดให้คุณแล้ว
-              {draftSavedTime && ` (บันทึกล่าสุด ${draftSavedTime} น.)`}
+              {draftSavedTime && ` (${draftSavedTime} น.)`}
             </span>
           </div>
           <button
             type="button"
             onClick={handleClearDraft}
-            className="text-xs font-bold text-[#ED1760] hover:underline flex items-center gap-1 cursor-pointer flex-shrink-0"
+            className="text-[11px] sm:text-xs font-bold text-[#ED1760] hover:underline flex items-center gap-1 cursor-pointer flex-shrink-0"
           >
             <RotateCcw className="w-3 h-3" />
-            <span>ล้างฟอร์ม</span>
+            <span>ล้าง</span>
           </button>
         </div>
       )}
 
       {/* Error Messages Banner */}
       {errorMessages.length > 0 && (
-        <div className="p-4 rounded-[16px] bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] space-y-1.5 shadow-2xs">
+        <div className="p-3 sm:p-4 rounded-xl sm:rounded-[16px] bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] space-y-1.5 shadow-2xs">
           <div className="flex items-center gap-2 font-bold text-xs sm:text-sm">
-            <AlertCircle className="w-4.5 h-4.5 text-[#EF4444]" />
+            <AlertCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#EF4444]" />
             <span>กรุณาตรวจสอบข้อมูลและแก้ไขข้อผิดพลาดดังต่อไปนี้:</span>
           </div>
-          <ul className="list-disc list-inside text-xs space-y-0.5 pl-6 font-medium">
+          <ul className="list-disc list-inside text-[11px] sm:text-xs space-y-0.5 pl-4 sm:pl-6 font-medium">
             {errorMessages.map((err, i) => (
               <li key={i}>{err}</li>
             ))}
@@ -293,10 +283,10 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
       )}
 
       {/* Main Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-6">
         {/* Card 1: Book Info */}
-        <div className="bg-white p-6 sm:p-7 rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] space-y-4">
-          <h3 className="text-base font-extrabold text-[#111827] border-b border-[#F3DDE7]/60 pb-3">
+        <div className="bg-white p-3.5 sm:p-7 rounded-xl sm:rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] space-y-3 sm:space-y-4">
+          <h3 className="text-sm sm:text-base font-extrabold text-[#111827] border-b border-[#F3DDE7]/60 pb-2 sm:pb-3">
             ข้อมูลทางวิชาการและสิ่งพิมพ์
           </h3>
 
@@ -329,27 +319,6 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
                 className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#F3DDE7] bg-[#FCF8FA] text-sm text-[#111827] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760]"
                 required
               />
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-xs font-bold text-[#111827] mb-1.5">
-                หมวดหมู่วิชาการ
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#F3DDE7] bg-[#FCF8FA] text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760] cursor-pointer"
-              >
-                <option value="พระไตรปิฎกและคัมภีร์ศึกษา">พระไตรปิฎกและคัมภีร์ศึกษา</option>
-                <option value="พุทธปรัชญาและสังคม">พุทธปรัชญาและสังคม</option>
-                <option value="ประวัติศาสตร์พระพุทธศาสนา">ประวัติศาสตร์พระพุทธศาสนา</option>
-                <option value="พุทธจิตวิทยา">พุทธจิตวิทยา</option>
-                <option value="สันติศึกษา">สันติศึกษา</option>
-                <option value="ภาษาบาลีและสันสกฤต">ภาษาบาลีและสันสกฤต</option>
-                <option value="ระเบียบวิธีวิจัย">ระเบียบวิธีวิจัย</option>
-                <option value="ทั่วไป">ทั่วไป</option>
-              </select>
             </div>
 
             {/* ISBN */}
@@ -443,6 +412,54 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
                 className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#F3DDE7] bg-[#FCF8FA] text-sm text-[#111827] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760]"
               />
             </div>
+
+            {/* Bestseller Settings */}
+            <div className="md:col-span-2 p-4 rounded-[16px] bg-gradient-to-r from-[#FFF1F7] via-white to-[#FCE7F3]/40 border border-[#F3DDE7] space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-[10px] bg-[#ED1760] text-white flex items-center justify-center">
+                    <Flame className="w-4 h-4 fill-white" />
+                  </div>
+                  <div>
+                    <div className="text-xs sm:text-sm font-extrabold text-[#111827]">
+                      ตั้งเป็นหนังสือขายดี (Best Seller)
+                    </div>
+                    <div className="text-[11px] text-[#64748B]">
+                      เปิดใช้งานเพื่อให้แสดงในส่วน &quot;หนังสือขายดี&quot; บนหน้าหลักและแคตตาล็อก
+                    </div>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isBestseller}
+                    onChange={(e) => setIsBestseller(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ED1760]"></div>
+                </label>
+              </div>
+
+              {isBestseller && (
+                <div className="pt-2 border-t border-[#F3DDE7]/60">
+                  <label className="block text-xs font-bold text-[#111827] mb-1">
+                    ยอดจำหน่ายสะสม (เล่ม)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={salesCount}
+                    onChange={(e) => setSalesCount(e.target.value)}
+                    placeholder="เช่น 1200"
+                    className="w-full sm:w-60 px-3.5 py-2 rounded-[12px] border border-[#F3DDE7] bg-white text-xs text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#ED1760]/20 focus:border-[#ED1760]"
+                  />
+                  <p className="text-[10px] text-[#64748B] mt-1">
+                    ตัวเลขยอดจำหน่ายสำหรับจัดอันดับหนังสือขายดีประจำสำนักพิมพ์
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -489,27 +506,6 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
                   placeholder="https://example.com/cover.jpg"
                   className="w-full px-3.5 py-2 rounded-[12px] border border-[#F3DDE7] bg-[#FCF8FA] text-xs text-[#111827] focus:outline-none focus:ring-1 focus:ring-[#ED1760]"
                 />
-              </div>
-
-              {/* Preset quick covers */}
-              <div>
-                <span className="text-[11px] font-bold text-[#64748B]">หรือเลือกจากภาพต้นแบบ:</span>
-                <div className="grid grid-cols-2 gap-2 mt-1.5">
-                  {PRESET_COVERS.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setCoverImage(preset.url)}
-                      className={`p-2 rounded-[10px] text-[11px] font-medium border text-left truncate transition-all cursor-pointer ${
-                        coverImage === preset.url
-                          ? 'border-[#ED1760] bg-[#FCE7F3] text-[#ED1760] font-bold'
-                          : 'border-[#F3DDE7] bg-[#FCF8FA] text-[#64748B] hover:border-[#ED1760]/50'
-                      }`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
 

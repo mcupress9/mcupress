@@ -25,45 +25,45 @@ export const Header: React.FC<HeaderProps> = ({
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#F3DDE7] px-4 sm:px-6 lg:px-8 py-3.5 transition-all">
-      <div className="flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#F3DDE7] px-3 sm:px-6 lg:px-8 py-2 sm:py-3.5 transition-all">
+      <div className="flex items-center justify-between gap-2.5 sm:gap-4">
         {/* Left: Current Page Header */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <button
             type="button"
             onClick={onOpenMobileMenu}
-            className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-[#ED1760] hover:bg-[#FCE7F3] transition-colors focus:outline-none cursor-pointer"
+            className="lg:hidden p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-slate-600 hover:text-[#ED1760] hover:bg-[#FCE7F3] transition-colors focus:outline-none cursor-pointer flex-shrink-0"
             aria-label="เปิดเมนูนำทาง"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
           </button>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-extrabold text-[#111827] tracking-tight leading-tight">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <h1 className="text-base sm:text-xl font-extrabold text-[#111827] tracking-tight leading-tight truncate">
                 {currentTabTitle}
               </h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-[8px] text-[10px] font-bold bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7]">
+              <span className="inline-flex items-center px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-[6px] sm:rounded-[8px] text-[9px] sm:text-[10px] font-bold bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7] flex-shrink-0">
                 MCU Press
               </span>
             </div>
-            <p className="text-xs font-normal text-[#64748B] line-clamp-1 mt-0.5">
+            <p className="text-[10px] sm:text-xs font-normal text-[#64748B] truncate mt-0.2 sm:mt-0.5 max-w-[200px] sm:max-w-none">
               {subtitle}
             </p>
           </div>
         </div>
 
         {/* Right Section: Notification & User Profile Card */}
-        <div className="flex items-center gap-2.5 sm:gap-3.5 relative">
+        <div className="flex items-center gap-1.5 sm:gap-3.5 relative flex-shrink-0">
           {/* Notification Button */}
           <div className="relative">
             <button
               onClick={() => setShowNotificationPopup(!showNotificationPopup)}
-              className="relative p-2.5 rounded-[14px] text-[#64748B] hover:text-[#ED1760] hover:bg-[#FCE7F3] border border-[#F3DDE7] transition-all duration-150 cursor-pointer shadow-2xs"
+              className="relative p-1.5 sm:p-2.5 rounded-lg sm:rounded-[14px] text-[#64748B] hover:text-[#ED1760] hover:bg-[#FCE7F3] border border-[#F3DDE7] transition-all duration-150 cursor-pointer shadow-2xs"
               title="การแจ้งเตือน"
               aria-label="การแจ้งเตือน"
             >
-              <Bell className="w-4.5 h-4.5" />
+              <Bell className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               {lowStockCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ED1760] opacity-75"></span>

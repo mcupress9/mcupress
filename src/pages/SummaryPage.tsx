@@ -24,6 +24,7 @@ import {
   PackageCheck,
   Eye,
   SlidersHorizontal,
+  Flame,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -370,6 +371,14 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
       .slice(0, 5);
   }, [filteredBooks]);
 
+  // Top bestsellers
+  const topBestsellers = useMemo(() => {
+    return [...books]
+      .filter((b) => b.is_bestseller || (b.sales_count && b.sales_count >= 500))
+      .sort((a, b) => (b.sales_count || 0) - (a.sales_count || 0))
+      .slice(0, 5);
+  }, [books]);
+
   const formatBaht = (amount: number) => {
     return new Intl.NumberFormat('th-TH', {
       style: 'currency',
@@ -524,70 +533,73 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 pb-16">
+    <div className="space-y-4 sm:space-y-8 pb-12 sm:pb-16">
       {/* Title & Top Action Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">
               รายงานและสรุปข้อมูลภาพรวม (Executive Summary)
             </h2>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7]">
+            <span className="px-2 py-0.2 sm:px-2.5 sm:py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7]">
               MCU Press Analytics
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          <p className="text-[11px] sm:text-sm text-slate-500 mt-0.5">
             สำนักพิมพ์มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย — สถิติสต๊อก รายการหนังสือแต่ละปี และเอกสารรายงาน
           </p>
         </div>
 
         {/* Global Export & Print Buttons */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[14px] bg-white border border-[#F3DDE7] hover:border-[#ED1760]/30 text-slate-700 hover:text-[#ED1760] text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-[14px] bg-white border border-[#F3DDE7] hover:border-[#ED1760]/30 text-slate-700 hover:text-[#ED1760] text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer"
             title="พิมพ์รายงานสรุป"
           >
-            <Printer className="w-4 h-4 text-slate-500" />
+            <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />
             <span className="hidden sm:inline">พิมพ์รายงาน</span>
           </button>
 
           <button
             onClick={() => exportExcel()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[14px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-sm shadow-emerald-600/20 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-[14px] bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-sm shadow-emerald-600/20 transition-colors cursor-pointer"
             title="ส่งออกไฟล์ Excel (.xls)"
           >
-            <FileSpreadsheet className="w-4 h-4" />
+            <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Excel</span>
           </button>
 
           <button
             onClick={() => exportCSV()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[14px] bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-[14px] bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
             title="ส่งออกไฟล์ CSV UTF-8"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>CSV</span>
           </button>
         </div>
       </div>
 
       {/* Main Feature Tabs Switcher (Yearly Breakdown vs General Overview) */}
-      <div className="bg-white p-1.5 rounded-[18px] border border-[#F3DDE7] shadow-2xs flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
+      <div className="bg-white p-1 sm:p-1.5 rounded-xl sm:rounded-[18px] border border-[#F3DDE7] shadow-2xs flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setActiveTab('yearly')}
-            className={`px-4 sm:px-5 py-2.5 rounded-[14px] text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+            className={`flex-1 sm:flex-initial px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-[14px] text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
               activeTab === 'yearly'
                 ? 'bg-[#ED1760] text-white shadow-sm shadow-[#ED1760]/25'
                 : 'text-[#64748B] hover:text-[#111827] hover:bg-[#FCF8FA]'
             }`}
           >
-            <Calendar className="w-4 h-4" />
-            <span>หนังสือและสต๊อกของแต่ละปี (Yearly Breakdown)</span>
+            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span>
+              <span className="sm:hidden">แยกตามปี</span>
+              <span className="hidden sm:inline">หนังสือและสต๊อกของแต่ละปี (Yearly Breakdown)</span>
+            </span>
             <span
-              className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+              className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded-full font-black ${
                 activeTab === 'yearly' ? 'bg-white/20 text-white' : 'bg-[#FCE7F3] text-[#ED1760]'
               }`}
             >
@@ -598,22 +610,25 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
-            className={`px-4 sm:px-5 py-2.5 rounded-[14px] text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+            className={`flex-1 sm:flex-initial px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-[14px] text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
               activeTab === 'overview'
                 ? 'bg-[#ED1760] text-white shadow-sm shadow-[#ED1760]/25'
                 : 'text-[#64748B] hover:text-[#111827] hover:bg-[#FCF8FA]'
             }`}
           >
-            <BarChart3 className="w-4 h-4" />
-            <span>ภาพรวมและหมวดหมู่ (Overview & Categories)</span>
+            <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+            <span>
+              <span className="sm:hidden">ภาพรวม & หมวดหมู่</span>
+              <span className="hidden sm:inline">ภาพรวมและหมวดหมู่ (Overview & Categories)</span>
+            </span>
           </button>
         </div>
 
         {activeTab === 'overview' && (
-          <div className="flex items-center bg-[#FCF8FA] p-1 rounded-[12px] border border-[#F3DDE7] text-xs font-bold">
+          <div className="flex items-center bg-[#FCF8FA] p-0.5 sm:p-1 rounded-lg sm:rounded-[12px] border border-[#F3DDE7] text-[11px] sm:text-xs font-bold overflow-x-auto">
             <button
               onClick={() => setPeriodFilter('all')}
-              className={`px-3 py-1 rounded-[8px] transition-all cursor-pointer ${
+              className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-[8px] transition-all cursor-pointer ${
                 periodFilter === 'all'
                   ? 'bg-[#ED1760] text-white shadow-2xs'
                   : 'text-[#64748B] hover:text-[#111827]'
@@ -623,7 +638,7 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
             </button>
             <button
               onClick={() => setPeriodFilter('today')}
-              className={`px-3 py-1 rounded-[8px] transition-all cursor-pointer ${
+              className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-[8px] transition-all cursor-pointer ${
                 periodFilter === 'today'
                   ? 'bg-[#ED1760] text-white shadow-2xs'
                   : 'text-[#64748B] hover:text-[#111827]'
@@ -633,7 +648,7 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
             </button>
             <button
               onClick={() => setPeriodFilter('week')}
-              className={`px-3 py-1 rounded-[8px] transition-all cursor-pointer ${
+              className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-[8px] transition-all cursor-pointer ${
                 periodFilter === 'week'
                   ? 'bg-[#ED1760] text-white shadow-2xs'
                   : 'text-[#64748B] hover:text-[#111827]'
@@ -643,7 +658,7 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
             </button>
             <button
               onClick={() => setPeriodFilter('month')}
-              className={`px-3 py-1 rounded-[8px] transition-all cursor-pointer ${
+              className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-[8px] transition-all cursor-pointer ${
                 periodFilter === 'month'
                   ? 'bg-[#ED1760] text-white shadow-2xs'
                   : 'text-[#64748B] hover:text-[#111827]'
@@ -653,7 +668,7 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
             </button>
             <button
               onClick={() => setPeriodFilter('year')}
-              className={`px-3 py-1 rounded-[8px] transition-all cursor-pointer ${
+              className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-[8px] transition-all cursor-pointer ${
                 periodFilter === 'year'
                   ? 'bg-[#ED1760] text-white shadow-2xs'
                   : 'text-[#64748B] hover:text-[#111827]'
@@ -669,24 +684,24 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
       {/* VIEW 1: YEARLY BREAKDOWN (หนังสือแต่ละปีมีอะไรบ้าง + สต๊อกแต่ละปี) */}
       {/* ============================================================== */}
       {activeTab === 'yearly' && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Top KPI Cards per Year */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
             {yearlyBreakdown.map((item) => {
               const isSelected = selectedYearTab === item.year.toString();
               return (
                 <div
                   key={item.year}
                   onClick={() => setSelectedYearTab(isSelected ? 'all' : item.year.toString())}
-                  className={`p-5 rounded-[20px] border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                  className={`p-3 sm:p-5 rounded-xl sm:rounded-[20px] border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
                     isSelected
                       ? 'bg-gradient-to-br from-white via-[#FFF1F7] to-[#FCE7F3] border-[#ED1760] shadow-md ring-2 ring-[#ED1760]/30'
                       : 'bg-white border-[#F3DDE7] hover:border-[#ED1760]/40 shadow-2xs hover:shadow-sm'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
                     <span
-                      className={`px-3 py-1 rounded-[10px] text-xs font-black ${
+                      className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-md sm:rounded-[10px] text-[10px] sm:text-xs font-black ${
                         isSelected
                           ? 'bg-[#ED1760] text-white shadow-xs'
                           : 'bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7]'
@@ -694,24 +709,24 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                     >
                       {item.yearLabel}
                     </span>
-                    <span className="text-xs font-bold text-[#64748B]">
-                      {item.titlesCount} ชื่อเรื่อง
+                    <span className="text-[10px] sm:text-xs font-bold text-[#64748B]">
+                      {item.titlesCount} เรื่อง
                     </span>
                   </div>
 
-                  <div className="space-y-1">
-                    <div className="text-xs text-[#64748B] font-semibold">ยอดสต๊อกคงเหลือรวม</div>
-                    <div className="text-3xl font-black text-[#111827] tabular-nums tracking-tight">
+                  <div className="space-y-0.5 sm:space-y-1">
+                    <div className="text-[10px] sm:text-xs text-[#64748B] font-semibold">คงเหลือรวม</div>
+                    <div className="text-xl sm:text-3xl font-black text-[#111827] tabular-nums tracking-tight">
                       {formatNumber(item.totalCopies)}{' '}
-                      <span className="text-xs font-normal text-[#64748B]">เล่ม</span>
+                      <span className="text-[10px] sm:text-xs font-normal text-[#64748B]">เล่ม</span>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-[#F3DDE7]/60 flex items-center justify-between text-xs">
-                    <span className="font-bold text-[#ED1760] tabular-nums">
-                      มูลค่า: {formatBaht(item.totalValue)}
+                  <div className="mt-2.5 sm:mt-4 pt-2 sm:pt-3 border-t border-[#F3DDE7]/60 flex items-center justify-between text-[11px] sm:text-xs">
+                    <span className="font-bold text-[#ED1760] tabular-nums text-[10px] sm:text-xs truncate">
+                      {formatBaht(item.totalValue)}
                     </span>
-                    <div className="flex items-center gap-1.5 text-[11px]">
+                    <div className="flex items-center gap-1 text-[10px] sm:text-[11px] flex-shrink-0">
                       <span className="text-[#10B981] font-bold" title="พร้อมจำหน่าย">
                         ✓{item.inStock}
                       </span>
@@ -729,79 +744,79 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
           </div>
 
           {/* Yearly Comparison Charts (Copies & Value Bar Chart) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6">
             {/* Chart 1: Stock Quantity by Year */}
-            <div className="lg:col-span-6 bg-white p-6 rounded-[20px] border border-[#F3DDE7] shadow-2xs space-y-4">
+            <div className="lg:col-span-6 bg-white p-3.5 sm:p-6 rounded-xl sm:rounded-[20px] border border-[#F3DDE7] shadow-2xs space-y-2.5 sm:space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-[#ECFDF5] text-[#10B981] flex items-center justify-center border border-[#A7F3D0]">
-                    <Boxes className="w-4 h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-[#ECFDF5] text-[#10B981] flex items-center justify-center border border-[#A7F3D0] flex-shrink-0">
+                    <Boxes className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-extrabold text-[#111827]">
+                    <h3 className="text-xs sm:text-sm font-extrabold text-[#111827]">
                       ยอดสต๊อกคงเหลือแยกตามปีที่พิมพ์ (จำนวนเล่ม)
                     </h3>
-                    <p className="text-[11px] text-[#64748B]">เปรียบเทียบปริมาณสต๊อกที่มีในแต่ละปี</p>
+                    <p className="text-[10px] sm:text-[11px] text-[#64748B]">เปรียบเทียบปริมาณสต๊อกที่มีในแต่ละปี</p>
                   </div>
                 </div>
               </div>
 
-              <div className="h-56 w-full">
+              <div className="h-44 sm:h-56 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={yearlyChartData} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3DDE7" />
-                    <XAxis dataKey="yearLabel" tick={{ fontSize: 11, fill: '#64748B' }} />
-                    <YAxis tick={{ fontSize: 11, fill: '#64748B' }} />
+                    <XAxis dataKey="yearLabel" tick={{ fontSize: 10, fill: '#64748B' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#64748B' }} />
                     <Tooltip
                       formatter={(val: any) => [`${formatNumber(Number(val))} เล่ม`, 'สต๊อกคงเหลือ']}
                       contentStyle={{
-                        borderRadius: '14px',
+                        borderRadius: '12px',
                         borderColor: '#F3DDE7',
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: 600,
                       }}
                     />
-                    <Bar dataKey="copies" fill="#10B981" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="copies" fill="#10B981" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
             {/* Chart 2: Stock Value by Year */}
-            <div className="lg:col-span-6 bg-white p-6 rounded-[20px] border border-[#F3DDE7] shadow-2xs space-y-4">
+            <div className="lg:col-span-6 bg-white p-3.5 sm:p-6 rounded-xl sm:rounded-[20px] border border-[#F3DDE7] shadow-2xs space-y-2.5 sm:space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-[#FCE7F3] text-[#ED1760] flex items-center justify-center border border-[#F3DDE7]">
-                    <Coins className="w-4 h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-[#FCE7F3] text-[#ED1760] flex items-center justify-center border border-[#F3DDE7] flex-shrink-0">
+                    <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-extrabold text-[#111827]">
+                    <h3 className="text-xs sm:text-sm font-extrabold text-[#111827]">
                       มูลค่าคลังสต๊อกแยกตามปีที่พิมพ์ (บาท)
                     </h3>
-                    <p className="text-[11px] text-[#64748B]">มูลค่าประเมินตามราคาปกสิ่งพิมพ์คงคลัง</p>
+                    <p className="text-[10px] sm:text-[11px] text-[#64748B]">มูลค่าประเมินตามราคาปกสิ่งพิมพ์คงคลัง</p>
                   </div>
                 </div>
               </div>
 
-              <div className="h-56 w-full">
+              <div className="h-44 sm:h-56 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={yearlyChartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3DDE7" />
-                    <XAxis dataKey="yearLabel" tick={{ fontSize: 11, fill: '#64748B' }} />
+                    <XAxis dataKey="yearLabel" tick={{ fontSize: 10, fill: '#64748B' }} />
                     <YAxis
-                      tick={{ fontSize: 11, fill: '#64748B' }}
+                      tick={{ fontSize: 10, fill: '#64748B' }}
                       tickFormatter={(v) => `฿${(v / 1000).toFixed(0)}k`}
                     />
                     <Tooltip
                       formatter={(val: any) => [formatBaht(Number(val)), 'มูลค่าสต๊อก']}
                       contentStyle={{
-                        borderRadius: '14px',
+                        borderRadius: '12px',
                         borderColor: '#F3DDE7',
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: 600,
                       }}
                     />
-                    <Bar dataKey="value" fill="#ED1760" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="value" fill="#ED1760" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -809,18 +824,18 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
           </div>
 
           {/* Year Filter Ribbon & Search Bar for Books Breakdown */}
-          <div className="bg-white p-4 sm:p-5 rounded-[20px] border border-[#F3DDE7] shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-[20px] border border-[#F3DDE7] shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4">
             {/* Year Selector Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              <span className="text-xs font-bold text-[#64748B] flex-shrink-0 flex items-center gap-1 mr-1">
-                <Filter className="w-3.5 h-3.5 text-[#ED1760]" />
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none">
+              <span className="text-[11px] sm:text-xs font-bold text-[#64748B] flex-shrink-0 flex items-center gap-1 mr-0.5 sm:mr-1">
+                <Filter className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#ED1760]" />
                 <span>เลือกปี:</span>
               </span>
 
               <button
                 type="button"
                 onClick={() => setSelectedYearTab('all')}
-                className={`px-3.5 py-1.5 rounded-[12px] text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1.5 ${
+                className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-[12px] text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1 sm:gap-1.5 ${
                   selectedYearTab === 'all'
                     ? 'bg-[#ED1760] text-white shadow-xs'
                     : 'bg-[#FCF8FA] text-[#64748B] hover:text-[#ED1760] border border-[#F3DDE7]'
@@ -828,7 +843,7 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
               >
                 <span>แสดงทุกปี</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                     selectedYearTab === 'all'
                       ? 'bg-white/20 text-white'
                       : 'bg-[#FCE7F3] text-[#ED1760]'
@@ -843,7 +858,7 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                   key={item.year}
                   type="button"
                   onClick={() => setSelectedYearTab(item.year.toString())}
-                  className={`px-3.5 py-1.5 rounded-[12px] text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1.5 ${
+                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-[12px] text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1 sm:gap-1.5 ${
                     selectedYearTab === item.year.toString()
                       ? 'bg-[#ED1760] text-white shadow-xs'
                       : 'bg-[#FCF8FA] text-[#111827] hover:text-[#ED1760] border border-[#F3DDE7]'
@@ -851,7 +866,7 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                 >
                   <span>{item.yearLabel}</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                       selectedYearTab === item.year.toString()
                         ? 'bg-white/20 text-white'
                         : 'bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]'
@@ -864,27 +879,27 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
             </div>
 
             {/* Search Input for books inside yearly breakdown */}
-            <div className="relative min-w-[260px]">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative w-full md:min-w-[260px] md:w-auto">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={yearlySearchQuery}
                 onChange={(e) => setYearlySearchQuery(e.target.value)}
                 placeholder="ค้นหาชื่อหนังสือ / ผู้แต่งในรายงานปี..."
-                className="w-full pl-9 pr-3 py-2 rounded-[12px] bg-[#FCF8FA] border border-[#F3DDE7] text-xs text-[#111827] placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#ED1760] transition-colors"
+                className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 rounded-lg sm:rounded-[12px] bg-[#FCF8FA] border border-[#F3DDE7] text-xs text-[#111827] placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#ED1760] transition-colors"
               />
             </div>
           </div>
 
           {/* Year-by-Year Book Catalog & Stock Detail Tables */}
-          <div className="space-y-6">
+          <div className="space-y-3 sm:space-y-6">
             {displayedYearlyBreakdown.length === 0 ? (
-              <div className="bg-white rounded-[20px] border border-[#F3DDE7] p-12 text-center max-w-md mx-auto shadow-2xs">
-                <Calendar className="w-10 h-10 text-[#ED1760] mx-auto mb-3 opacity-60" />
-                <h4 className="text-sm font-extrabold text-[#111827]">
+              <div className="bg-white rounded-xl sm:rounded-[20px] border border-[#F3DDE7] p-8 sm:p-12 text-center max-w-md mx-auto shadow-2xs">
+                <Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-[#ED1760] mx-auto mb-2.5 sm:mb-3 opacity-60" />
+                <h4 className="text-xs sm:text-sm font-extrabold text-[#111827]">
                   ไม่พบข้อมูลหนังสือในปีที่ระบุ
                 </h4>
-                <p className="text-xs text-[#64748B] mt-1">
+                <p className="text-[11px] sm:text-xs text-[#64748B] mt-1">
                   ลองล้างคำค้นหาหรือเลือกดูปีอื่น ๆ ที่มีการตีพิมพ์สิ่งพิมพ์
                 </p>
               </div>
@@ -894,26 +909,26 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                 return (
                   <div
                     key={yearGroup.year}
-                    className="bg-white rounded-[22px] border border-[#F3DDE7] shadow-2xs overflow-hidden transition-all"
+                    className="bg-white rounded-xl sm:rounded-[22px] border border-[#F3DDE7] shadow-2xs overflow-hidden transition-all"
                   >
                     {/* Header Banner for This Year */}
-                    <div className="p-5 sm:p-6 bg-gradient-to-r from-[#FCF8FA] via-white to-[#FCE7F3]/25 border-b border-[#F3DDE7] flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="px-3.5 py-1.5 rounded-[12px] bg-[#ED1760] text-white font-black text-sm shadow-xs shadow-[#ED1760]/20 flex items-center gap-1.5">
-                          <Calendar className="w-4 h-4" />
+                    <div className="p-3 sm:p-6 bg-gradient-to-r from-[#FCF8FA] via-white to-[#FCE7F3]/25 border-b border-[#F3DDE7] flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4">
+                      <div className="flex items-center gap-2.5 sm:gap-3">
+                        <div className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-lg sm:rounded-[12px] bg-[#ED1760] text-white font-black text-xs sm:text-sm shadow-xs shadow-[#ED1760]/20 flex items-center gap-1.5 flex-shrink-0">
+                          <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           <span>{yearGroup.yearLabel}</span>
                         </div>
                         <div>
-                          <h4 className="text-base font-extrabold text-[#111827]">
+                          <h4 className="text-xs sm:text-base font-extrabold text-[#111827]">
                             รายการหนังสือที่พิมพ์ปี {yearGroup.year}
                           </h4>
-                          <div className="flex items-center gap-2 text-xs text-[#64748B] mt-0.5 flex-wrap">
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-[#64748B] mt-0.5 flex-wrap">
                             <span>
-                              จำนวน <strong>{yearGroup.titlesCount}</strong> ชื่อเรื่อง
+                              จำนวน <strong>{yearGroup.titlesCount}</strong> เรื่อง
                             </span>
                             <span>·</span>
                             <span>
-                              สต๊อกคงเหลือรวม{' '}
+                              คงเหลือ{' '}
                               <strong className="text-[#10B981] font-black">
                                 {formatNumber(yearGroup.totalCopies)}
                               </strong>{' '}
@@ -921,7 +936,7 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                             </span>
                             <span>·</span>
                             <span>
-                              มูลค่าสต๊อกรวม{' '}
+                              มูลค่า{' '}
                               <strong className="text-[#ED1760] font-black">
                                 {formatBaht(yearGroup.totalValue)}
                               </strong>
@@ -931,36 +946,36 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                       </div>
 
                       {/* Status Badges & Controls */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2.5 py-1 rounded-[10px] bg-[#ECFDF5] text-[#065F46] font-bold text-xs border border-[#A7F3D0]">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-[10px] bg-[#ECFDF5] text-[#065F46] font-bold text-[10px] sm:text-xs border border-[#A7F3D0]">
                           พร้อมจำหน่าย: {yearGroup.inStock}
                         </span>
-                        <span className="px-2.5 py-1 rounded-[10px] bg-[#FFFBEB] text-[#92400E] font-bold text-xs border border-[#FDE68A]">
+                        <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-[10px] bg-[#FFFBEB] text-[#92400E] font-bold text-[10px] sm:text-xs border border-[#FDE68A]">
                           ใกล้หมด: {yearGroup.lowStock}
                         </span>
-                        <span className="px-2.5 py-1 rounded-[10px] bg-[#FEF2F2] text-[#991B1B] font-bold text-xs border border-[#FECACA]">
+                        <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-[10px] bg-[#FEF2F2] text-[#991B1B] font-bold text-[10px] sm:text-xs border border-[#FECACA]">
                           หมดสต๊อก: {yearGroup.outOfStock}
                         </span>
 
                         <button
                           type="button"
                           onClick={() => exportExcel(yearGroup.year)}
-                          className="px-2.5 py-1 rounded-[10px] bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
+                          className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-[10px] bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] sm:text-xs font-bold transition-colors cursor-pointer"
                           title={`ส่งออก Excel ปี ${yearGroup.year}`}
                         >
-                          Excel ปีนี้
+                          Excel
                         </button>
 
                         <button
                           type="button"
                           onClick={() => toggleYearSection(yearGroup.year)}
-                          className="p-1.5 rounded-[10px] text-[#64748B] hover:text-[#111827] hover:bg-[#FCF8FA] border border-[#F3DDE7] transition-colors cursor-pointer"
+                          className="p-1 sm:p-1.5 rounded-md sm:rounded-[10px] text-[#64748B] hover:text-[#111827] hover:bg-[#FCF8FA] border border-[#F3DDE7] transition-colors cursor-pointer"
                           title={isExpanded ? 'ย่อตาราง' : 'ขยายตาราง'}
                         >
                           {isExpanded ? (
-                            <ChevronUp className="w-4 h-4" />
+                            <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           ) : (
-                            <ChevronDown className="w-4 h-4" />
+                            <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           )}
                         </button>
                       </div>
@@ -970,18 +985,18 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                     {isExpanded && (
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs sm:text-sm">
-                          <thead className="bg-[#FCF8FA] text-xs text-[#64748B] font-bold border-b border-[#F3DDE7]">
+                          <thead className="bg-[#FCF8FA] text-[11px] sm:text-xs text-[#64748B] font-bold border-b border-[#F3DDE7]">
                             <tr>
-                              <th className="px-5 py-3 w-14 text-center">ลำดับ</th>
-                              <th className="px-5 py-3 w-16">หน้าปก</th>
-                              <th className="px-5 py-3">ชื่อหนังสือ / ผู้แต่ง</th>
-                              <th className="px-5 py-3">หมวดหมู่</th>
-                              <th className="px-5 py-3">ISBN</th>
-                              <th className="px-5 py-3 text-right">ราคาปก</th>
-                              <th className="px-5 py-3 text-center">คงเหลือในสต๊อก</th>
-                              <th className="px-5 py-3 text-right">มูลค่าสต๊อกรวม</th>
-                              <th className="px-5 py-3 text-center">สถานะ</th>
-                              <th className="px-5 py-3 text-right">จัดการ</th>
+                              <th className="px-2.5 sm:px-5 py-2 sm:py-3 w-10 sm:w-14 text-center">ลำดับ</th>
+                              <th className="px-2.5 sm:px-5 py-2 sm:py-3 w-12 sm:w-16">หน้าปก</th>
+                              <th className="px-2.5 sm:px-5 py-2 sm:py-3">ชื่อหนังสือ / ผู้แต่ง</th>
+                              <th className="px-2.5 sm:px-5 py-2 sm:py-3">หมวดหมู่</th>
+                              <th className="px-2.5 sm:px-5 py-2 sm:py-3">ISBN</th>
+                              <th className="px-2.5 sm:px-5 py-2 sm:py-3 text-right">ราคาปก</th>
+                              <th className="px-2.5 sm:px-5 py-2 sm:py-3 text-center">คงเหลือในสต๊อก</th>
+                              <th className="px-2.5 sm:px-5 py-2 sm:py-3 text-right">มูลค่าสต๊อกรวม</th>
+                              <th className="px-2.5 sm:px-5 py-2 sm:py-3 text-center">สถานะ</th>
+                              <th className="px-2.5 sm:px-5 py-2 sm:py-3 text-right">จัดการ</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-[#F3DDE7]/50">
@@ -993,11 +1008,11 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                                   onClick={() => onSelectBook(book)}
                                   className="hover:bg-[#FCE7F3]/15 transition-colors cursor-pointer"
                                 >
-                                  <td className="px-5 py-3.5 text-center font-bold text-slate-400">
+                                  <td className="px-2.5 sm:px-5 py-2 sm:py-3.5 text-center font-bold text-slate-400 text-xs">
                                     {idx + 1}
                                   </td>
-                                  <td className="px-5 py-3.5">
-                                    <div className="w-11 h-15 rounded-md overflow-hidden bg-slate-100 border border-[#F3DDE7] shadow-2xs flex-shrink-0">
+                                  <td className="px-2.5 sm:px-5 py-2 sm:py-3.5">
+                                    <div className="w-8 h-11 sm:w-11 sm:h-15 rounded overflow-hidden bg-slate-100 border border-[#F3DDE7] shadow-2xs flex-shrink-0">
                                       <img
                                         src={book.cover_image}
                                         alt={book.book_name}
@@ -1009,50 +1024,50 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                                       />
                                     </div>
                                   </td>
-                                  <td className="px-5 py-3.5 max-w-sm">
-                                    <div className="font-extrabold text-[#111827] line-clamp-1 hover:text-[#ED1760] transition-colors">
+                                  <td className="px-2.5 sm:px-5 py-2 sm:py-3.5 max-w-sm">
+                                    <div className="font-extrabold text-[#111827] line-clamp-1 hover:text-[#ED1760] transition-colors text-xs sm:text-sm">
                                       {book.book_name}
                                     </div>
-                                    <div className="text-[11px] text-[#64748B] mt-0.5">
+                                    <div className="text-[10px] sm:text-[11px] text-[#64748B] mt-0.5">
                                       ผู้แต่ง: {book.author}
                                     </div>
                                   </td>
-                                  <td className="px-5 py-3.5 text-xs text-[#111827]">
-                                    <span className="bg-[#FCF8FA] px-2 py-0.5 rounded-[6px] border border-[#F3DDE7] text-[11px]">
+                                  <td className="px-2.5 sm:px-5 py-2 sm:py-3.5 text-xs text-[#111827]">
+                                    <span className="bg-[#FCF8FA] px-1.5 sm:px-2 py-0.5 rounded-[6px] border border-[#F3DDE7] text-[10px] sm:text-[11px]">
                                       {book.category || 'สิ่งพิมพ์วิชาการ'}
                                     </span>
                                   </td>
-                                  <td className="px-5 py-3.5 text-xs text-[#64748B] font-mono">
+                                  <td className="px-2.5 sm:px-5 py-2 sm:py-3.5 text-[10px] sm:text-xs text-[#64748B] font-mono">
                                     {book.isbn || '-'}
                                   </td>
-                                  <td className="px-5 py-3.5 text-right font-bold text-[#111827] tabular-nums">
+                                  <td className="px-2.5 sm:px-5 py-2 sm:py-3.5 text-right font-bold text-[#111827] tabular-nums text-xs sm:text-sm">
                                     {formatBaht(book.price)}
                                   </td>
-                                  <td className="px-5 py-3.5 text-center">
+                                  <td className="px-2.5 sm:px-5 py-2 sm:py-3.5 text-center">
                                     <div className="inline-flex items-center gap-1">
-                                      <span className="text-sm font-black text-[#111827] tabular-nums">
+                                      <span className="text-xs sm:text-sm font-black text-[#111827] tabular-nums">
                                         {book.stock_quantity}
                                       </span>
-                                      <span className="text-xs text-[#64748B]">เล่ม</span>
+                                      <span className="text-[10px] sm:text-xs text-[#64748B]">เล่ม</span>
                                     </div>
                                   </td>
-                                  <td className="px-5 py-3.5 text-right font-black text-[#ED1760] tabular-nums">
+                                  <td className="px-2.5 sm:px-5 py-2 sm:py-3.5 text-right font-black text-[#ED1760] tabular-nums text-xs sm:text-sm">
                                     {formatBaht(lineValue)}
                                   </td>
-                                  <td className="px-5 py-3.5 text-center">
+                                  <td className="px-2.5 sm:px-5 py-2 sm:py-3.5 text-center">
                                     <StockBadge quantity={book.stock_quantity} size="sm" />
                                   </td>
-                                  <td className="px-5 py-3.5 text-right">
+                                  <td className="px-2.5 sm:px-5 py-2 sm:py-3.5 text-right">
                                     <button
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         onSelectBook(book);
                                       }}
-                                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[10px] bg-[#FCE7F3] hover:bg-[#ED1760] text-[#ED1760] hover:text-white text-xs font-bold transition-colors cursor-pointer border border-[#F3DDE7]"
+                                      className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-[10px] bg-[#FCE7F3] hover:bg-[#ED1760] text-[#ED1760] hover:text-white text-[11px] sm:text-xs font-bold transition-colors cursor-pointer border border-[#F3DDE7]"
                                     >
-                                      <Eye className="w-3.5 h-3.5" />
-                                      <span>รายละเอียด</span>
+                                      <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                      <span className="hidden sm:inline">รายละเอียด</span>
                                     </button>
                                   </td>
                                 </tr>
@@ -1063,14 +1078,14 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                             <tr>
                               <td
                                 colSpan={6}
-                                className="px-5 py-3 text-right text-xs uppercase tracking-wider text-[#64748B]"
+                                className="px-2.5 sm:px-5 py-2 sm:py-3 text-right text-[10px] sm:text-xs uppercase tracking-wider text-[#64748B]"
                               >
                                 รวมสต๊อกปี {yearGroup.year} ({yearGroup.books.length} รายการ):
                               </td>
-                              <td className="px-5 py-3 text-center text-sm font-black text-[#10B981]">
+                              <td className="px-2.5 sm:px-5 py-2 sm:py-3 text-center text-xs sm:text-sm font-black text-[#10B981]">
                                 {formatNumber(yearGroup.totalCopies)} เล่ม
                               </td>
-                              <td className="px-5 py-3 text-right text-sm font-black text-[#ED1760]">
+                              <td className="px-2.5 sm:px-5 py-2 sm:py-3 text-right text-xs sm:text-sm font-black text-[#ED1760]">
                                 {formatBaht(yearGroup.totalValue)}
                               </td>
                               <td colSpan={2}></td>
@@ -1091,73 +1106,73 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
       {/* VIEW 2: OVERVIEW & CATEGORIES (สถิติรวม & หมวดหมู่) */}
       {/* ============================================================== */}
       {activeTab === 'overview' && (
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-8">
           {/* Top 6 KPI Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
             {/* Total Titles */}
-            <div className="bg-white p-5 rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
+              <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 หนังสือทั้งหมด
               </div>
-              <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+              <div className="text-lg sm:text-2xl font-black text-slate-900 mt-0.5 sm:mt-1">
                 {formatNumber(summaryStats.totalTitles)}
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">ชื่อเรื่อง</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">ชื่อเรื่อง</div>
             </div>
 
             {/* Total Copies */}
-            <div className="bg-white p-5 rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
+              <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 จำนวนคงเหลือรวม
               </div>
-              <div className="text-xl sm:text-2xl font-black text-blue-700 mt-1">
+              <div className="text-lg sm:text-2xl font-black text-blue-700 mt-0.5 sm:mt-1">
                 {formatNumber(summaryStats.totalCopies)}
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">เล่มในคลัง</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">เล่มในคลัง</div>
             </div>
 
             {/* Total Stock Value */}
-            <div className="bg-white p-5 rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
+              <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 มูลค่าสต๊อกรวม
               </div>
-              <div className="text-lg sm:text-xl font-black text-rose-800 mt-1 truncate">
+              <div className="text-base sm:text-xl font-black text-rose-800 mt-0.5 sm:mt-1 truncate">
                 {formatBaht(summaryStats.totalStockValue)}
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">บาท</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">บาท</div>
             </div>
 
             {/* In Stock */}
-            <div className="bg-white p-5 rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
-              <div className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
+            <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
+              <div className="text-[10px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
                 มีสต๊อกพร้อมจำหน่าย
               </div>
-              <div className="text-xl sm:text-2xl font-black text-emerald-700 mt-1">
+              <div className="text-lg sm:text-2xl font-black text-emerald-700 mt-0.5 sm:mt-1">
                 {formatNumber(summaryStats.inStockTitles)}
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">&gt; 10 เล่ม</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">&gt; 10 เล่ม</div>
             </div>
 
             {/* Low Stock */}
-            <div className="bg-white p-5 rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
-              <div className="text-[11px] font-bold text-amber-600 uppercase tracking-wider">
+            <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
+              <div className="text-[10px] sm:text-[11px] font-bold text-amber-600 uppercase tracking-wider">
                 หนังสือใกล้หมด
               </div>
-              <div className="text-xl sm:text-2xl font-black text-amber-600 mt-1">
+              <div className="text-lg sm:text-2xl font-black text-amber-600 mt-0.5 sm:mt-1">
                 {formatNumber(summaryStats.lowStockTitles)}
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">1 - 10 เล่ม</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">1 - 10 เล่ม</div>
             </div>
 
             {/* Out of Stock */}
-            <div className="bg-white p-5 rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
-              <div className="text-[11px] font-bold text-rose-600 uppercase tracking-wider">
+            <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-3xl border border-rose-100/90 shadow-[0_2px_10px_rgba(190,24,93,0.03)]">
+              <div className="text-[10px] sm:text-[11px] font-bold text-rose-600 uppercase tracking-wider">
                 หนังสือหมดสต๊อก
               </div>
-              <div className="text-xl sm:text-2xl font-black text-rose-600 mt-1">
+              <div className="text-lg sm:text-2xl font-black text-rose-600 mt-0.5 sm:mt-1">
                 {formatNumber(summaryStats.outOfStockTitles)}
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">0 เล่ม</div>
+              <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">0 เล่ม</div>
             </div>
           </div>
 
@@ -1178,28 +1193,28 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
           />
 
           {/* Visual Charts: Donut Chart & Category Value Bar Chart */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6">
             {/* Donut Chart: สถานะสต๊อก */}
-            <div className="lg:col-span-5 bg-white p-6 sm:p-7 rounded-3xl border border-rose-100/90 shadow-[0_2px_14px_rgba(190,24,93,0.03)] space-y-4">
+            <div className="lg:col-span-5 bg-white p-3.5 sm:p-7 rounded-xl sm:rounded-3xl border border-rose-100/90 shadow-[0_2px_14px_rgba(190,24,93,0.03)] space-y-2.5 sm:space-y-4">
               <div className="flex items-center gap-2">
-                <PieChartIcon className="w-5 h-5 text-rose-700" />
-                <h3 className="text-base font-extrabold text-slate-900">
+                <PieChartIcon className="w-4 h-4 sm:w-5 sm:h-5 text-rose-700" />
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
                   สัดส่วนสถานะสต๊อกหนังสือ
                 </h3>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-400">
                 วิเคราะห์ความพร้อมในการให้บริการและจำหน่ายสิ่งพิมพ์
               </p>
 
-              <div className="h-64 w-full">
+              <div className="h-52 sm:h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={statusPieData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={65}
-                      outerRadius={95}
+                      innerRadius={50}
+                      outerRadius={75}
                       paddingAngle={5}
                       dataKey="value"
                     >
@@ -1210,10 +1225,10 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                     <Tooltip
                       formatter={(val: any) => [`${val ?? 0} ชื่อเรื่อง`, 'จำนวน']}
                       contentStyle={{
-                        borderRadius: '16px',
+                        borderRadius: '12px',
                         borderColor: '#fecdd3',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: 600,
                       }}
                     />
@@ -1221,12 +1236,12 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                 </ResponsiveContainer>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-2 border-t border-slate-100 text-center">
                 {statusPieData.map((item, idx) => (
-                  <div key={idx} className="p-2 rounded-xl bg-slate-50/70">
-                    <div className="text-[11px] font-bold text-slate-500 truncate">{item.name}</div>
-                    <div className="text-sm font-black mt-0.5" style={{ color: item.color }}>
-                      {item.value} <span className="text-[10px] font-normal text-slate-400">ชื่อ</span>
+                  <div key={idx} className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-slate-50/70">
+                    <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 truncate">{item.name}</div>
+                    <div className="text-xs sm:text-sm font-black mt-0.5" style={{ color: item.color }}>
+                      {item.value} <span className="text-[9px] sm:text-[10px] font-normal text-slate-400">ชื่อ</span>
                     </div>
                   </div>
                 ))}
@@ -1234,29 +1249,29 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
             </div>
 
             {/* Category Value Bar Chart */}
-            <div className="lg:col-span-7 bg-white p-6 sm:p-7 rounded-3xl border border-rose-100/90 shadow-[0_2px_14px_rgba(190,24,93,0.03)] space-y-4">
+            <div className="lg:col-span-7 bg-white p-3.5 sm:p-7 rounded-xl sm:rounded-3xl border border-rose-100/90 shadow-[0_2px_14px_rgba(190,24,93,0.03)] space-y-2.5 sm:space-y-4">
               <div className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-rose-700" />
-                <h3 className="text-base font-extrabold text-slate-900">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-rose-700" />
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
                   มูลค่าคงคลังตามหมวดหมู่สิ่งพิมพ์
                 </h3>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-400">
                 6 หมวดหมู่ที่มีมูลค่าสินค้าคงคลังรวมสูงสุด (บาท)
               </p>
 
-              <div className="h-64 w-full">
+              <div className="h-52 sm:h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={categoryBarData} margin={{ top: 10, right: 10, left: -10, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis
                       dataKey="name"
-                      tick={{ fontSize: 11, fill: '#64748b' }}
+                      tick={{ fontSize: 10, fill: '#64748b' }}
                       angle={-15}
                       textAnchor="end"
                     />
                     <YAxis
-                      tick={{ fontSize: 11, fill: '#64748b' }}
+                      tick={{ fontSize: 10, fill: '#64748b' }}
                       tickFormatter={(v) => `฿${(v / 1000).toFixed(0)}k`}
                     />
                     <Tooltip
@@ -1266,101 +1281,145 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                         return found?.fullName || name;
                       }}
                       contentStyle={{
-                        borderRadius: '16px',
+                        borderRadius: '12px',
                         borderColor: '#fecdd3',
-                        fontSize: '12px',
+                        fontSize: '11px',
                         fontWeight: 600,
                       }}
                     />
-                    <Bar dataKey="value" fill="#9d174d" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="value" fill="#9d174d" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
-              <div className="pt-2 text-right">
-                <span className="text-[11px] text-slate-400 font-medium">
+              <div className="pt-1 text-right">
+                <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">
                   * ข้อมูลอัปเดตแบบ Real-time ตามตัวกรองปัจจุบัน
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Top 5 Rankings Table */}
-          <div className="bg-white rounded-3xl border border-rose-100/90 shadow-[0_2px_14px_rgba(190,24,93,0.03)] p-6 sm:p-7 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/80">
-                <Award className="w-5 h-5" />
+          {/* Top 5 Rankings Tables (Grid with 2 Cards: Inventory Assets & Best Sellers) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+            {/* Table 1: Top Inventory Assets */}
+            <div className="bg-white rounded-xl sm:rounded-3xl border border-rose-100/90 shadow-[0_2px_14px_rgba(190,24,93,0.03)] p-3.5 sm:p-6 space-y-2.5 sm:space-y-4">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/80 flex-shrink-0">
+                  <Award className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-base font-extrabold text-slate-900">
+                    5 อันดับหนังสือมูลค่าคงคลังสูงสุด
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-slate-400">
+                    มูลค่าสต๊อกคงคลังรวมสูงสุดในสำนักพิมพ์ (ราคาปก × จำนวน)
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  5 อันดับหนังสือมูลค่าคงคลังสูงสุด (Top Inventory Assets)
-                </h3>
-                <p className="text-xs text-slate-400">
-                  รายการหนังสือที่มีมูลค่าสต๊อกคงคลังรวมสูงสุดในสำนักพิมพ์
-                </p>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-400 font-bold uppercase text-[9px] sm:text-[10px] border-b border-slate-100">
+                    <tr>
+                      <th className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-center w-8 sm:w-10">#</th>
+                      <th className="px-2 sm:px-3 py-1.5 sm:py-2.5">ชื่อหนังสือ</th>
+                      <th className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right">คงเหลือ</th>
+                      <th className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right font-black text-rose-800">มูลค่ารวม</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {top5Books.map((book, idx) => (
+                      <tr
+                        key={book.id}
+                        onClick={() => onSelectBook(book)}
+                        className="hover:bg-rose-50/20 transition-colors cursor-pointer"
+                      >
+                        <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-center font-black text-slate-400 text-[11px] sm:text-xs">
+                          {idx + 1}
+                        </td>
+                        <td className="px-2 sm:px-3 py-1.5 sm:py-2 font-bold text-slate-900 text-xs sm:text-sm">
+                          <div className="line-clamp-1 hover:text-rose-800">{book.book_name}</div>
+                          <div className="text-[9px] sm:text-[10px] text-slate-400">{book.author}</div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-right font-bold text-slate-900 text-xs">
+                          {book.stock_quantity} เล่ม
+                        </td>
+                        <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-right font-black text-rose-800 tabular-nums text-xs">
+                          {formatBaht(book.stock_quantity * book.price)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-slate-50/80 text-slate-400 font-bold uppercase text-[11px] border-b border-slate-100">
-                  <tr>
-                    <th className="px-4 py-3 text-center w-12">อันดับ</th>
-                    <th className="px-4 py-3 w-16">รูปปก</th>
-                    <th className="px-4 py-3">ชื่อหนังสือ</th>
-                    <th className="px-4 py-3">ผู้แต่ง</th>
-                    <th className="px-4 py-3 text-right">ราคาต่อเล่ม</th>
-                    <th className="px-4 py-3 text-right">คงเหลือ</th>
-                    <th className="px-4 py-3 text-right font-black text-rose-800">มูลค่ารวม</th>
-                    <th className="px-4 py-3 text-center">สถานะ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {top5Books.map((book, idx) => (
-                    <tr
-                      key={book.id}
-                      onClick={() => onSelectBook(book)}
-                      className="hover:bg-rose-50/20 transition-colors cursor-pointer"
-                    >
-                      <td className="px-4 py-3 text-center font-black text-slate-400">
-                        <span className="w-6 h-6 rounded-full bg-slate-100 inline-flex items-center justify-center text-xs text-slate-700">
-                          {idx + 1}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 w-16">
-                        <div className="w-12 h-16 rounded-md overflow-hidden bg-slate-100 border border-slate-200/90 shadow-xs flex-shrink-0">
-                          <img
-                            src={book.cover_image}
-                            alt={book.book_name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200';
-                            }}
-                          />
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 font-bold text-slate-900 max-w-xs">
-                        <div className="line-clamp-1 hover:text-rose-800">{book.book_name}</div>
-                        <div className="text-[11px] text-slate-400">{book.category}</div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 text-xs">{book.author}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-slate-800">
-                        {formatBaht(book.price)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-slate-900">
-                        {book.stock_quantity} เล่ม
-                      </td>
-                      <td className="px-4 py-3 text-right font-black text-rose-800">
-                        {formatBaht(book.stock_quantity * book.price)}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <StockBadge quantity={book.stock_quantity} size="sm" />
-                      </td>
+            {/* Table 2: Top Best Sellers */}
+            <div className="bg-white rounded-xl sm:rounded-3xl border border-[#F3DDE7] shadow-[0_2px_14px_rgba(237,23,96,0.03)] p-3.5 sm:p-6 space-y-2.5 sm:space-y-4">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-[#ED1760] to-[#FF6584] text-white flex items-center justify-center shadow-xs flex-shrink-0">
+                  <Flame className="w-4 h-4 sm:w-5 sm:h-5 fill-white" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-base font-extrabold text-[#111827]">
+                    อันดับหนังสือขายดีประจำสำนักพิมพ์ (Best Sellers)
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-[#64748B]">
+                    สิ่งพิมพ์ยอดนิยม เรียงตามยอดจำหน่ายและคำสั่งซื้อ
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#FCF8FA] text-[#64748B] font-bold uppercase text-[9px] sm:text-[10px] border-b border-[#F3DDE7]">
+                    <tr>
+                      <th className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-center w-8 sm:w-10">อันดับ</th>
+                      <th className="px-2 sm:px-3 py-1.5 sm:py-2.5">ชื่อหนังสือ</th>
+                      <th className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right">ราคา</th>
+                      <th className="px-2 sm:px-3 py-1.5 sm:py-2.5 text-right font-black text-[#ED1760]">ยอดขายสะสม</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#F3DDE7]/50">
+                    {topBestsellers.map((book, idx) => (
+                      <tr
+                        key={book.id}
+                        onClick={() => onSelectBook(book)}
+                        className="hover:bg-[#FCE7F3]/20 transition-colors cursor-pointer"
+                      >
+                        <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-center">
+                          <span className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full inline-flex items-center justify-center text-[9px] sm:text-[10px] font-black ${
+                            idx === 0
+                              ? 'bg-amber-400 text-amber-950 shadow-xs'
+                              : idx === 1
+                              ? 'bg-slate-300 text-slate-800'
+                              : idx === 2
+                              ? 'bg-amber-700 text-white'
+                              : 'bg-[#FCF8FA] text-[#64748B]'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                        </td>
+                        <td className="px-2 sm:px-3 py-1.5 sm:py-2 font-bold text-[#111827] text-xs sm:text-sm">
+                          <div className="line-clamp-1 hover:text-[#ED1760]">{book.book_name}</div>
+                          <div className="text-[9px] sm:text-[10px] text-[#64748B] flex items-center gap-1.5 mt-0.5">
+                            <span>พ.ศ. {book.published_year}</span>
+                            <span>·</span>
+                            <span>{book.author}</span>
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-right font-bold text-[#111827] tabular-nums text-xs">
+                          {formatBaht(book.price)}
+                        </td>
+                        <td className="px-2 sm:px-3 py-1.5 sm:py-2 text-right font-black text-[#ED1760] tabular-nums text-xs">
+                          {book.sales_count ? `${formatNumber(book.sales_count)} เล่ม` : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -1573,7 +1632,15 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
                             </div>
                           </td>
                           <td className="px-4 py-3 font-bold text-slate-900 max-w-xs">
-                            <div className="line-clamp-2 hover:text-rose-800">{book.book_name}</div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="line-clamp-2 hover:text-rose-800">{book.book_name}</span>
+                              {(book.is_bestseller || (book.sales_count && book.sales_count >= 500)) && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-[6px] bg-gradient-to-r from-amber-500 to-[#ED1760] text-white text-[9px] font-black flex-shrink-0">
+                                  <Flame className="w-2.5 h-2.5 fill-white" />
+                                  <span>ขายดี</span>
+                                </span>
+                              )}
+                            </div>
                             <div className="text-[11px] text-slate-400 mt-0.5">
                               {book.category || 'สิ่งพิมพ์วิชาการ'}
                             </div>

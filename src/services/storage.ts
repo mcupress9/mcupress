@@ -59,6 +59,8 @@ export const INITIAL_BOOKS: Book[] = [
     created_by: 'พระมหาคณัย สุมน, ดร.',
     category: 'พระไตรปิฎกและคัมภีร์ศึกษา',
     description: 'ประมวลสารัตถะสำคัญแห่งพระไตรปิฎก ทั้งพระวินัย พระสูตร และพระอภิธรรม เพื่อการศึกษาค้นคว้าของคณาจารย์และนิสิต',
+    is_bestseller: true,
+    sales_count: 1420,
   },
   {
     id: 'mcu-b02',
@@ -75,6 +77,8 @@ export const INITIAL_BOOKS: Book[] = [
     created_by: 'พระมหาคณัย สุมน, ดร.',
     category: 'พุทธปรัชญาและสังคม',
     description: 'การนำหลักธรรมคำสอนในพระพุทธศาสนามาประยุกต์และวิเคราะห์บริบทสังคม เศรษฐกิจ และความเปลี่ยนแปลงของโลกยุคใหม่',
+    is_bestseller: true,
+    sales_count: 980,
   },
   {
     id: 'mcu-b03',
@@ -91,6 +95,8 @@ export const INITIAL_BOOKS: Book[] = [
     created_by: 'นายสมชาย เจริญสุข',
     category: 'ประวัติศาสตร์พระพุทธศาสนา',
     description: 'ลำดับเหตุการณ์การเผยแผ่และพัฒนาการของพระพุทธศาสนาตั้งแต่อินเดีย ลังกา สู่ดินแดนสุวรรณภูมิและประเทศไทย',
+    is_bestseller: true,
+    sales_count: 850,
   },
   {
     id: 'mcu-b04',
@@ -107,6 +113,7 @@ export const INITIAL_BOOKS: Book[] = [
     created_by: 'นางสาววราภรณ์ วงศ์สว่าง',
     category: 'พุทธจิตวิทยา',
     description: 'หลักการทางจิตวิทยาพุทธบูรณาการเพื่อการบำบัด เยียวยา และพัฒนาศักยภาพแห่งชีวิตด้วยสติและสมาธิ',
+    sales_count: 420,
   },
   {
     id: 'mcu-b05',
@@ -123,6 +130,8 @@ export const INITIAL_BOOKS: Book[] = [
     created_by: 'พระมหาคณัย สุมน, ดร.',
     category: 'พระไตรปิฎกและคัมภีร์ศึกษา',
     description: 'คัมภีร์อธิบายศีล สมาธิ ปัญญา อันเป็นหนทางสู่ความบริสุทธิ์หมดจดแห่งจิตใจ จัดพิมพ์เป็นคู่มืออ้างอิงวิทยานิพนธ์',
+    is_bestseller: true,
+    sales_count: 1250,
   },
   {
     id: 'mcu-b06',
@@ -139,6 +148,7 @@ export const INITIAL_BOOKS: Book[] = [
     created_by: 'นายสมชาย เจริญสุข',
     category: 'สันติศึกษา',
     description: 'องค์ความรู้กระบวนทัศน์สันติวิธี วิถีพุทธ และแนวทางการจัดการความขัดแย้งในสังคมพหุวัฒนธรรม',
+    sales_count: 360,
   },
   {
     id: 'mcu-b07',
@@ -155,6 +165,7 @@ export const INITIAL_BOOKS: Book[] = [
     created_by: 'พระมหาคณัย สุมน, ดร.',
     category: 'พระไตรปิฎกและคัมภีร์ศึกษา',
     description: 'คู่มือการศึกษาจิต เจตสิก รูป นิพพาน สำหรับนิสิตระดับปริญญาตรีและบัณฑิตศึกษา',
+    sales_count: 510,
   },
   {
     id: 'mcu-b08',
@@ -171,6 +182,7 @@ export const INITIAL_BOOKS: Book[] = [
     created_by: 'นางสาววราภรณ์ วงศ์สว่าง',
     category: 'พุทธปรัชญาและสังคม',
     description: 'บทสนทนาอันลึกซึ้งระหว่างพระนาคเสนกับพระยามิลินท์ ไขข้อข้องใจในปรัชญาชีวิตและการดับทุกข์',
+    sales_count: 480,
   },
   {
     id: 'mcu-b09',
@@ -187,6 +199,8 @@ export const INITIAL_BOOKS: Book[] = [
     created_by: 'พระมหาคณัย สุมน, ดร.',
     category: 'ระเบียบวิธีวิจัย',
     description: 'ตำราหลักว่าด้วยการออกแบบงานวิจัยทางพระพุทธศาสนา ทั้งเชิงคุณภาพ เชิงปริมาณ และการสังเคราะห์ตัวบทคัมภีร์',
+    is_bestseller: true,
+    sales_count: 1120,
   },
   {
     id: 'mcu-b10',
@@ -203,6 +217,7 @@ export const INITIAL_BOOKS: Book[] = [
     created_by: 'นายสมชาย เจริญสุข',
     category: 'ภาษาบาลีและสันสกฤต',
     description: 'หลักไวยากรณ์บาลี โครงสร้างประโยค และการแปลความหมายศัพท์ในพระไตรปิฎกสำหรับนักวิชาการ',
+    sales_count: 290,
   },
 ];
 
@@ -235,7 +250,26 @@ export const storageService = {
       if (!Array.isArray(parsed)) {
         return [];
       }
-      return parsed;
+      // Migrate or enrich initial books if they don't have bestseller flags yet
+      let hasUpdates = false;
+      const enriched = parsed.map((book) => {
+        const initialMatch = INITIAL_BOOKS.find((ib) => ib.id === book.id);
+        if (initialMatch) {
+          if (book.is_bestseller === undefined && initialMatch.is_bestseller !== undefined) {
+            book.is_bestseller = initialMatch.is_bestseller;
+            hasUpdates = true;
+          }
+          if (book.sales_count === undefined && initialMatch.sales_count !== undefined) {
+            book.sales_count = initialMatch.sales_count;
+            hasUpdates = true;
+          }
+        }
+        return book;
+      });
+      if (hasUpdates) {
+        localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(enriched));
+      }
+      return enriched;
     } catch {
       return [];
     }
@@ -416,6 +450,8 @@ export const storageService = {
       stockAfter = stockBefore + quantity;
     } else if (type === 'decrease') {
       stockAfter = Math.max(0, stockBefore - quantity);
+      // Increment sales_count on stock decrease/distribution
+      book.sales_count = (book.sales_count || 0) + quantity;
     }
 
     book.stock_quantity = stockAfter;

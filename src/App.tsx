@@ -190,7 +190,7 @@ const MainApplication: React.FC = () => {
         )}
 
         {/* Dynamic Page Views */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 px-2.5 py-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           {/* If detail view is open */}
           {isDetailView && selectedBook ? (
             <BookDetailPage

@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   XCircle,
   Plus,
-  PackageCheck,
   ChevronRight,
   Calendar,
   Layers,
@@ -19,22 +18,11 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Flame,
+  Sparkles,
+  TrendingUp,
+  Award,
 } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  AreaChart,
-  Area,
-} from 'recharts';
 import { Book, SummaryStats } from '../types';
 import { StockBadge } from '../components/StockBadge';
 
@@ -55,48 +43,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigateToStock,
   onSelectBook,
 }) => {
-  // 1. Chart 1 Data: Books by published year
-  const booksByYearData = useMemo(() => {
-    const counts: Record<number, number> = {};
-    books.forEach((b) => {
-      const year = b.published_year || 2567;
-      counts[year] = (counts[year] || 0) + 1;
-    });
-    return Object.keys(counts)
-      .map((yearStr) => ({
-        year: `พ.ศ. ${yearStr}`,
-        count: counts[Number(yearStr)],
-        rawYear: Number(yearStr),
-      }))
-      .sort((a, b) => a.rawYear - b.rawYear);
-  }, [books]);
-
-  // 2. Chart 2 Data: Stock status distribution
-  const stockStatusData = useMemo(() => {
-    return [
-      { name: 'มีสินค้า (>10 เล่ม)', value: stats.inStockTitles, color: '#10B981' },
-      { name: 'ใกล้หมด (1-10 เล่ม)', value: stats.lowStockTitles, color: '#F59E0B' },
-      { name: 'หมดสต๊อก (0 เล่ม)', value: stats.outOfStockTitles, color: '#EF4444' },
-    ];
-  }, [stats]);
-
-  // 3. Chart 3 Data: Stock value by published year
-  const stockValueByYearData = useMemo(() => {
-    const values: Record<number, number> = {};
-    books.forEach((b) => {
-      const year = b.published_year || 2567;
-      const val = (b.stock_quantity || 0) * (b.price || 0);
-      values[year] = (values[year] || 0) + val;
-    });
-    return Object.keys(values)
-      .map((yearStr) => ({
-        year: `พ.ศ. ${yearStr}`,
-        value: values[Number(yearStr)],
-        rawYear: Number(yearStr),
-      }))
-      .sort((a, b) => a.rawYear - b.rawYear);
-  }, [books]);
-
   // 4. Low stock books (<= 10 and > 0)
   const lowStockBooks = useMemo(() => {
     return books.filter((b) => b.stock_quantity > 0 && b.stock_quantity <= 10);
@@ -105,6 +51,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   // 5. Out of stock books (= 0)
   const outOfStockBooks = useMemo(() => {
     return books.filter((b) => b.stock_quantity === 0);
+  }, [books]);
+
+  // 5.5. Bestseller books (is_bestseller === true or top sales)
+  const bestsellerBooks = useMemo(() => {
+    return [...books]
+      .filter((b) => b.is_bestseller || (b.sales_count && b.sales_count >= 500))
+      .sort((a, b) => (b.sales_count || 0) - (a.sales_count || 0));
   }, [books]);
 
   // 6. Recently added books (sorted by created_at)
@@ -191,138 +144,117 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 pb-12">
+    <div className="space-y-3 sm:space-y-8 pb-8 sm:pb-12">
       {/* 7. HERO DASHBOARD (MCU Esports Style) */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-[#FCE7F3] via-[#FFF1F7] to-[#FCF8FA] p-6 sm:p-8 rounded-[24px] border border-[#F3DDE7] shadow-[0_4px_20px_rgba(237,23,96,0.04)]">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xl sm:text-2xl font-bold text-[#111827]">สวัสดี 👋</span>
-              <span className="inline-flex items-center px-3 py-0.5 rounded-full text-xs font-bold bg-white text-[#ED1760] border border-[#F3DDE7] shadow-2xs">
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#FCE7F3] via-[#FFF1F7] to-[#FCF8FA] p-3 sm:p-8 rounded-xl sm:rounded-[24px] border border-[#F3DDE7] shadow-[0_4px_20px_rgba(237,23,96,0.04)]">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-6">
+          <div className="space-y-1 sm:space-y-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-sm sm:text-2xl font-bold text-[#111827]">สวัสดี 👋</span>
+              <span className="inline-flex items-center px-1.5 sm:px-3 py-0.2 sm:py-0.5 rounded-full text-[9px] sm:text-xs font-bold bg-white text-[#ED1760] border border-[#F3DDE7] shadow-2xs">
                 MCU Press Inventory
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight">
+            <h2 className="text-base sm:text-3xl font-extrabold text-[#111827] tracking-tight leading-snug">
               ภาพรวมสต๊อกหนังสือของสำนักพิมพ์
             </h2>
-            <p className="text-xs sm:text-sm text-[#64748B] max-w-2xl leading-relaxed whitespace-pre-line">
+            <p className="text-[11px] sm:text-sm text-[#64748B] max-w-2xl leading-relaxed whitespace-pre-line hidden sm:block">
               สำนักพิมพ์มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย{'\n'}
               ติดตามยอดคงเหลือ มูลค่าคลังสิ่งพิมพ์ และสถิติวิชาการแบบ Real-time
             </p>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap">
             <button
               onClick={onNavigateToAddBook}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[14px] bg-[#ED1760] hover:bg-[#D41456] text-white font-bold text-xs sm:text-sm shadow-sm shadow-[#ED1760]/25 transition-all duration-150 cursor-pointer"
+              className="inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-[14px] bg-[#ED1760] hover:bg-[#D41456] text-white font-bold text-xs sm:text-sm shadow-sm shadow-[#ED1760]/25 transition-all duration-150 cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>เพิ่มหนังสือใหม่</span>
             </button>
             <button
               onClick={onNavigateToStock}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[14px] bg-white hover:bg-[#FCE7F3] text-[#111827] hover:text-[#ED1760] font-bold text-xs sm:text-sm border border-[#F3DDE7] shadow-2xs transition-all duration-150 cursor-pointer"
+              className="inline-flex items-center gap-1 sm:gap-2 px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-[14px] bg-white hover:bg-[#FCE7F3] text-[#111827] hover:text-[#ED1760] font-bold text-xs sm:text-sm border border-[#F3DDE7] shadow-2xs transition-all duration-150 cursor-pointer"
             >
-              <Boxes className="w-4 h-4 text-[#ED1760]" />
+              <Boxes className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ED1760]" />
               <span>จัดการสต๊อก</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 8. STATISTICS CARDS (5 Cards, Modern MCU Esports) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
+      {/* 8. STATISTICS CARDS (2 cols on mobile, 4 cols on lg/xl) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-5">
         {/* Card 1: หนังสือทั้งหมด */}
-        <div className="bg-white p-5 rounded-[18px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col justify-between transition-all duration-150 hover:shadow-md">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-full bg-[#FCE7F3] text-[#ED1760] flex items-center justify-center">
-              <BookOpen className="w-5 h-5" />
+        <div className="bg-white p-2.5 sm:p-5 rounded-xl sm:rounded-[18px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col justify-between transition-all duration-150 hover:shadow-md">
+          <div className="flex items-center justify-between mb-1 sm:mb-3">
+            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-full bg-[#FCE7F3] text-[#ED1760] flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
-            <span className="text-[11px] font-semibold text-[#10B981] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#A7F3D0]">
+            <span className="text-[9px] sm:text-[11px] font-semibold text-[#10B981] bg-[#ECFDF5] px-1 sm:px-2 py-0.2 sm:py-0.5 rounded-full border border-[#A7F3D0] truncate">
               พร้อมบริการ
             </span>
           </div>
           <div>
-            <div className="text-xs font-semibold text-[#64748B]">หนังสือทั้งหมด</div>
-            <div className="text-3xl font-extrabold text-[#111827] tabular-nums tracking-tight mt-1">
+            <div className="text-[10px] sm:text-xs font-semibold text-[#64748B]">หนังสือทั้งหมด</div>
+            <div className="text-lg sm:text-3xl font-extrabold text-[#111827] tabular-nums tracking-tight mt-0.5 sm:mt-1">
               {formatNumber(stats.totalTitles)}
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-[#F3DDE7]/50 text-xs font-bold text-[#ED1760]">
+          <div className="mt-1 sm:mt-3 pt-1 sm:pt-2.5 border-t border-[#F3DDE7]/50 text-[9px] sm:text-xs font-bold text-[#ED1760]">
             จำนวนชื่อเรื่อง
           </div>
         </div>
 
-        {/* Card 2: หนังสือในสต๊อก */}
-        <div className="bg-white p-5 rounded-[18px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col justify-between transition-all duration-150 hover:shadow-md">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-full bg-[#ECFDF5] text-[#10B981] flex items-center justify-center">
-              <PackageCheck className="w-5 h-5" />
+        {/* Card 2: มูลค่าสต๊อก */}
+        <div className="bg-white p-2.5 sm:p-5 rounded-xl sm:rounded-[18px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col justify-between transition-all duration-150 hover:shadow-md">
+          <div className="flex items-center justify-between mb-1 sm:mb-3">
+            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-full bg-[#FCE7F3] text-[#ED1760] flex items-center justify-center flex-shrink-0">
+              <Coins className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
-            <span className="text-[11px] font-semibold text-[#10B981] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#A7F3D0]">
-              {stats.inStockTitles} รายการ
-            </span>
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-[#64748B]">หนังสือในสต๊อก</div>
-            <div className="text-3xl font-extrabold text-[#111827] tabular-nums tracking-tight mt-1">
-              {formatNumber(stats.totalCopies)}
-            </div>
-          </div>
-          <div className="mt-3 pt-2.5 border-t border-[#F3DDE7]/50 text-xs font-bold text-[#10B981]">
-            เล่มคงเหลือ
-          </div>
-        </div>
-
-        {/* Card 3: มูลค่าสต๊อก */}
-        <div className="bg-white p-5 rounded-[18px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col justify-between transition-all duration-150 hover:shadow-md">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-full bg-[#FCE7F3] text-[#ED1760] flex items-center justify-center">
-              <Coins className="w-5 h-5" />
-            </div>
-            <span className="text-[11px] font-semibold text-[#ED1760] bg-[#FCE7F3] px-2 py-0.5 rounded-full border border-[#F3DDE7]">
+            <span className="text-[9px] sm:text-[11px] font-semibold text-[#ED1760] bg-[#FCE7F3] px-1 sm:px-2 py-0.2 sm:py-0.5 rounded-full border border-[#F3DDE7]">
               ราคาปก
             </span>
           </div>
           <div>
-            <div className="text-xs font-semibold text-[#64748B]">มูลค่าสต๊อก</div>
-            <div className="text-2xl sm:text-[26px] font-extrabold text-[#111827] tabular-nums tracking-tight truncate mt-1" title={formatBaht(stats.totalStockValue)}>
+            <div className="text-[10px] sm:text-xs font-semibold text-[#64748B]">มูลค่าสต๊อก</div>
+            <div className="text-base sm:text-2xl xl:text-[26px] font-extrabold text-[#111827] tabular-nums tracking-tight truncate mt-0.5 sm:mt-1" title={formatBaht(stats.totalStockValue)}>
               {formatBaht(stats.totalStockValue)}
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-[#F3DDE7]/50 text-xs font-bold text-[#ED1760]">
+          <div className="mt-1 sm:mt-3 pt-1 sm:pt-2.5 border-t border-[#F3DDE7]/50 text-[9px] sm:text-xs font-bold text-[#ED1760]">
             มูลค่าคลังสิ่งพิมพ์
           </div>
         </div>
 
-        {/* Card 4: ใกล้หมดสต๊อก */}
-        <div className="bg-white p-5 rounded-[18px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col justify-between transition-all duration-150 hover:shadow-md">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-full bg-[#FFFBEB] text-[#F59E0B] flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5" />
+        {/* Card 3: ใกล้หมดสต๊อก */}
+        <div className="bg-white p-2.5 sm:p-5 rounded-xl sm:rounded-[18px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col justify-between transition-all duration-150 hover:shadow-md">
+          <div className="flex items-center justify-between mb-1 sm:mb-3">
+            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-full bg-[#FFFBEB] text-[#F59E0B] flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
-            <span className="text-[11px] font-semibold text-[#B45309] bg-[#FFFBEB] px-2 py-0.5 rounded-full border border-[#FDE68A]">
+            <span className="text-[9px] sm:text-[11px] font-semibold text-[#B45309] bg-[#FFFBEB] px-1 sm:px-2 py-0.2 sm:py-0.5 rounded-full border border-[#FDE68A]">
               1-10 เล่ม
             </span>
           </div>
           <div>
-            <div className="text-xs font-semibold text-[#64748B]">ใกล้หมดสต๊อก</div>
-            <div className="text-3xl font-extrabold text-[#F59E0B] tabular-nums tracking-tight mt-1">
+            <div className="text-[10px] sm:text-xs font-semibold text-[#64748B]">ใกล้หมดสต๊อก</div>
+            <div className="text-lg sm:text-3xl font-extrabold text-[#F59E0B] tabular-nums tracking-tight mt-0.5 sm:mt-1">
               {formatNumber(stats.lowStockTitles)}
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-[#F3DDE7]/50 text-xs font-bold text-[#F59E0B]">
+          <div className="mt-1 sm:mt-3 pt-1 sm:pt-2.5 border-t border-[#F3DDE7]/50 text-[9px] sm:text-xs font-bold text-[#F59E0B]">
             รายการเฝ้าระวัง
           </div>
         </div>
 
-        {/* Card 5: หมดสต๊อก */}
-        <div className="bg-white p-5 rounded-[18px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col justify-between transition-all duration-150 hover:shadow-md">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-full bg-[#FEF2F2] text-[#EF4444] flex items-center justify-center">
-              <XCircle className="w-5 h-5" />
+        {/* Card 4: หมดสต๊อก */}
+        <div className="bg-white p-2.5 sm:p-5 rounded-xl sm:rounded-[18px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col justify-between transition-all duration-150 hover:shadow-md">
+          <div className="flex items-center justify-between mb-1 sm:mb-3">
+            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-full bg-[#FEF2F2] text-[#EF4444] flex items-center justify-center flex-shrink-0">
+              <XCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
-            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+            <span className={`text-[9px] sm:text-[11px] font-semibold px-1 sm:px-2 py-0.2 sm:py-0.5 rounded-full border ${
               stats.outOfStockTitles > 0
                 ? 'bg-[#FEF2F2] text-[#B91C1C] border-[#FECACA]'
                 : 'bg-[#ECFDF5] text-[#10B981] border-[#A7F3D0]'
@@ -331,216 +263,316 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </span>
           </div>
           <div>
-            <div className="text-xs font-semibold text-[#64748B]">หมดสต๊อก</div>
-            <div className={`text-3xl font-extrabold tabular-nums tracking-tight mt-1 ${
+            <div className="text-[10px] sm:text-xs font-semibold text-[#64748B]">หมดสต๊อก</div>
+            <div className={`text-lg sm:text-3xl font-extrabold tabular-nums tracking-tight mt-0.5 sm:mt-1 ${
               stats.outOfStockTitles > 0 ? 'text-[#EF4444]' : 'text-[#111827]'
             }`}>
               {formatNumber(stats.outOfStockTitles)}
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-[#F3DDE7]/50 text-xs font-bold text-[#EF4444]">
+          <div className="mt-1 sm:mt-3 pt-1 sm:pt-2.5 border-t border-[#F3DDE7]/50 text-[9px] sm:text-xs font-bold text-[#EF4444]">
             รายการสินค้าหมด
           </div>
         </div>
       </div>
 
-      {/* 10. CONTENT SECTIONS (Section 1, Section 2, Section 3) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
-        {/* Section 1: จำนวนหนังสือตามปีที่พิมพ์ */}
-        <div className="bg-white p-6 rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-extrabold text-[#111827]">
-                จำนวนหนังสือตามปีที่พิมพ์
-              </h3>
-              <p className="text-xs text-[#64748B]">จำนวนชื่อเรื่องแยกตามปีจัดพิมพ์</p>
+      {/* 10. STOCK STATUS OVERVIEW (สัดส่วนสถานะสต๊อกหนังสือ - ปรับให้กะทัดรัด ประหยัดพื้นที่) */}
+      <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-[18px] border border-[#F3DDE7] shadow-[0_2px_12px_rgba(237,23,96,0.03)] space-y-2 sm:space-y-3">
+        {/* Compact Title Row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="p-1 sm:p-1.5 bg-[#ECFDF5] rounded-md sm:rounded-[8px] text-[#10B981]">
+              <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
-            <div className="p-2 bg-[#FCE7F3] rounded-[10px] text-[#ED1760]">
-              <Calendar className="w-4 h-4" />
-            </div>
-          </div>
-
-          <div className="h-60 w-full mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={booksByYearData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F8FAFC" />
-                <XAxis dataKey="year" tick={{ fontSize: 11, fill: '#64748B' }} interval={0} angle={-15} textAnchor="end" />
-                <YAxis tick={{ fontSize: 11, fill: '#64748B' }} allowDecimals={false} />
-                <Tooltip
-                  formatter={(val: any) => [`${val} ชื่อเรื่อง`, 'จำนวนหนังสือ']}
-                  contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '14px', border: '1px solid #F3DDE7', boxShadow: '0 4px 16px rgba(237,23,96,0.08)' }}
-                />
-                <Bar dataKey="count" fill="#ED1760" radius={[6, 6, 0, 0]} barSize={24} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Section 2: สถานะสต๊อกหนังสือ (Donut Chart) */}
-        <div className="bg-white p-6 rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col">
-          <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-base font-extrabold text-[#111827]">
+              <h3 className="text-xs sm:text-sm font-extrabold text-[#111827] leading-none">
                 สถานะสต๊อกหนังสือ
               </h3>
-              <p className="text-xs text-[#64748B]">สัดส่วนสต๊อก (มีสินค้า, ใกล้หมด, หมดสต๊อก)</p>
-            </div>
-            <div className="p-2 bg-[#ECFDF5] rounded-[10px] text-[#10B981]">
-              <Layers className="w-4 h-4" />
+              <p className="text-[9px] sm:text-xs text-[#64748B] mt-0.5">
+                สัดส่วนสต๊อกสิ่งพิมพ์ (มีสินค้า, ใกล้หมด, หมดสต๊อก)
+              </p>
             </div>
           </div>
-
-          <div className="h-60 w-full mt-2 flex flex-col justify-center items-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={stockStatusData}
-                  cx="50%"
-                  cy="45%"
-                  innerRadius={50}
-                  outerRadius={75}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {stockStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(val: any, name: any) => [`${val} ชื่อเรื่อง`, name]}
-                  contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '14px', border: '1px solid #F3DDE7', boxShadow: '0 4px 16px rgba(237,23,96,0.08)' }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  height={36}
-                  formatter={(val) => <span className="text-xs text-[#64748B] font-semibold">{val}</span>}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <span className="text-[10px] sm:text-xs font-bold text-[#64748B] bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
+            รวม {formatNumber(stats.totalTitles)} ชื่อเรื่อง
+          </span>
         </div>
 
-        {/* Section 3: มูลค่าสต๊อกตามปีที่พิมพ์ (Area Chart) */}
-        <div className="bg-white p-6 rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-extrabold text-[#111827]">
-                มูลค่าสต๊อกตามปีที่พิมพ์
-              </h3>
-              <p className="text-xs text-[#64748B]">มูลค่าคงเหลือในคลัง แยกตามปี (บาท)</p>
+        {/* Proportional Segmented Progress Bar */}
+        {stats.totalTitles > 0 ? (
+          <div className="w-full h-2 sm:h-2.5 rounded-full overflow-hidden bg-slate-100 flex shadow-inner">
+            <div
+              style={{ width: `${(stats.inStockTitles / stats.totalTitles) * 100}%` }}
+              className="bg-[#10B981] transition-all duration-300"
+              title={`มีสินค้า: ${stats.inStockTitles} เรื่อง`}
+            />
+            <div
+              style={{ width: `${(stats.lowStockTitles / stats.totalTitles) * 100}%` }}
+              className="bg-[#F59E0B] transition-all duration-300"
+              title={`ใกล้หมด: ${stats.lowStockTitles} เรื่อง`}
+            />
+            <div
+              style={{ width: `${(stats.outOfStockTitles / stats.totalTitles) * 100}%` }}
+              className="bg-[#EF4444] transition-all duration-300"
+              title={`หมดสต๊อก: ${stats.outOfStockTitles} เรื่อง`}
+            />
+          </div>
+        ) : (
+          <div className="w-full h-1.5 sm:h-2 rounded-full bg-slate-100" />
+        )}
+
+        {/* 3 Status Badges / Cards in a single compact 3-column row */}
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+          {/* In stock */}
+          <div className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-emerald-50/70 border border-emerald-100 flex flex-col sm:flex-row items-center sm:justify-between text-center sm:text-left gap-0.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] flex-shrink-0" />
+              <span className="text-[10px] sm:text-xs font-bold text-emerald-900 truncate">
+                มีสินค้า
+              </span>
             </div>
-            <div className="p-2 bg-[#FCE7F3] rounded-[10px] text-[#ED1760]">
-              <Coins className="w-4 h-4" />
+            <div className="text-xs sm:text-base font-black text-emerald-700 tabular-nums">
+              {formatNumber(stats.inStockTitles)}{' '}
+              <span className="text-[9px] sm:text-xs font-normal text-emerald-600">เรื่อง</span>
             </div>
           </div>
 
-          <div className="h-60 w-full mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stockValueByYearData} margin={{ top: 10, right: 10, left: -10, bottom: 20 }}>
-                <defs>
-                  <linearGradient id="mcuValGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ED1760" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#ED1760" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F8FAFC" />
-                <XAxis dataKey="year" tick={{ fontSize: 11, fill: '#64748B' }} interval={0} angle={-15} textAnchor="end" />
-                <YAxis tick={{ fontSize: 10, fill: '#64748B' }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  formatter={(val: any) => [formatBaht(val), 'มูลค่าสต๊อก']}
-                  contentStyle={{ backgroundColor: '#FFFFFF', borderRadius: '14px', border: '1px solid #F3DDE7', boxShadow: '0 4px 16px rgba(237,23,96,0.08)' }}
-                />
-                <Area type="monotone" dataKey="value" stroke="#ED1760" strokeWidth={2.5} fillOpacity={1} fill="url(#mcuValGradient)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* Low stock */}
+          <div className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-amber-50/70 border border-amber-100 flex flex-col sm:flex-row items-center sm:justify-between text-center sm:text-left gap-0.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] flex-shrink-0" />
+              <span className="text-[10px] sm:text-xs font-bold text-amber-900 truncate">
+                ใกล้หมด
+              </span>
+            </div>
+            <div className="text-xs sm:text-base font-black text-amber-700 tabular-nums">
+              {formatNumber(stats.lowStockTitles)}{' '}
+              <span className="text-[9px] sm:text-xs font-normal text-amber-600">เรื่อง</span>
+            </div>
+          </div>
+
+          {/* Out of stock */}
+          <div className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-rose-50/70 border border-rose-100 flex flex-col sm:flex-row items-center sm:justify-between text-center sm:text-left gap-0.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] flex-shrink-0" />
+              <span className="text-[10px] sm:text-xs font-bold text-rose-900 truncate">
+                หมดสต๊อก
+              </span>
+            </div>
+            <div className="text-xs sm:text-base font-black text-rose-700 tabular-nums">
+              {formatNumber(stats.outOfStockTitles)}{' '}
+              <span className="text-[9px] sm:text-xs font-normal text-rose-600">เรื่อง</span>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* 10. BESTSELLER BOOKS SHOWCASE (หนังสือขายดีประจำสำนักพิมพ์ มจร) */}
+      <div className="bg-gradient-to-br from-white via-[#FFF7FA] to-[#FCE7F3]/30 rounded-xl sm:rounded-[22px] border border-[#F3DDE7] shadow-[0_4px_20px_rgba(237,23,96,0.04)] p-3 sm:p-7 space-y-2.5 sm:space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 pb-2.5 sm:pb-4 border-b border-[#F3DDE7]">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-[14px] bg-gradient-to-tr from-[#ED1760] to-[#FF6584] text-white flex items-center justify-center shadow-md shadow-[#ED1760]/25 flex-shrink-0">
+              <Flame className="w-4 h-4 sm:w-6 sm:h-6 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-xl font-extrabold text-[#111827] tracking-tight">
+                  หนังสือขายดี (Best Sellers)
+                </h3>
+                <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full text-[9px] sm:text-xs font-bold bg-[#ED1760] text-white shadow-xs">
+                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  <span>ยอดจำหน่ายสูงสุด</span>
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-[#64748B] mt-0.5 hidden sm:block">
+                ผลงานวิชาการและคัมภีร์ที่มีความต้องการสูง คัดเลือกจากยอดจำหน่ายและการสั่งซื้อ
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onNavigateToBooks}
+            className="inline-flex items-center gap-1 px-2.5 sm:px-4 py-1 sm:py-2 rounded-lg sm:rounded-[12px] bg-white hover:bg-[#FCE7F3] text-[#ED1760] font-bold text-[11px] sm:text-xs border border-[#F3DDE7] transition-all shadow-2xs cursor-pointer self-start sm:self-auto"
+          >
+            <span>ดูทั้งหมด</span>
+            <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          </button>
+        </div>
+
+        {bestsellerBooks.length === 0 ? (
+          <div className="p-4 sm:p-8 text-center bg-white rounded-xl sm:rounded-[16px] border border-[#F3DDE7] text-xs text-[#64748B]">
+            ยังไม่มีหนังสือที่กำหนดเป็นหนังสือขายดี ท่านสามารถแก้ไขหรือเพิ่มหนังสือและทำเครื่องหมาย &quot;หนังสือขายดี&quot; ได้
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-5">
+            {bestsellerBooks.slice(0, 4).map((book, idx) => (
+              <div
+                key={book.id}
+                onClick={() => onSelectBook(book)}
+                className="bg-white rounded-xl sm:rounded-[18px] border border-[#F3DDE7] hover:border-[#ED1760]/50 shadow-2xs hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col justify-between group cursor-pointer relative"
+              >
+                {/* Ranking Tag */}
+                <div className="absolute top-1 sm:top-2.5 left-1 sm:left-2.5 z-10 flex items-center gap-0.5 sm:gap-1 px-1 sm:px-2.5 py-0.2 sm:py-1 rounded-sm sm:rounded-[10px] bg-gradient-to-r from-amber-500 to-[#ED1760] text-white text-[8px] sm:text-[11px] font-black shadow-md">
+                  <Award className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                  <span>อันดับ {idx + 1}</span>
+                </div>
+
+                {/* Bestseller Badge Right */}
+                <div className="absolute top-1 sm:top-2.5 right-1 sm:right-2.5 z-10">
+                  <span className="inline-flex items-center gap-0.5 px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded-[4px] sm:rounded-[8px] bg-white/95 backdrop-blur-xs text-[#ED1760] text-[8px] sm:text-[10px] font-extrabold shadow-sm border border-[#F3DDE7]">
+                    <Flame className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-[#ED1760]" />
+                    <span>ขายดี</span>
+                  </span>
+                </div>
+
+                {/* Cover Image */}
+                <div className="aspect-[3/4] w-full bg-slate-100 overflow-hidden relative">
+                  <img
+                    src={book.cover_image}
+                    alt={book.book_name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute bottom-1 left-1 right-1 sm:bottom-1.5 sm:left-1.5 sm:right-1.5 flex items-center justify-between text-white text-[8px] sm:text-[10px] font-bold">
+                    <span className="bg-black/60 px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded-[4px] backdrop-blur-xs">
+                      พ.ศ. {book.published_year}
+                    </span>
+                    {book.sales_count && (
+                      <span className="bg-[#ED1760] px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded-[4px] shadow-xs truncate max-w-[80px] sm:max-w-[100px]">
+                        ขาย {formatNumber(book.sales_count)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Book Details */}
+                <div className="p-2 sm:p-4 flex-1 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[8px] sm:text-[10px] font-bold text-[#ED1760] bg-[#FCE7F3] px-1.5 py-0.2 rounded-sm sm:rounded-[6px] truncate block max-w-max">
+                      {book.category || 'สิ่งพิมพ์วิชาการ'}
+                    </span>
+                    <h4
+                      className="text-[11px] sm:text-sm font-extrabold text-[#111827] group-hover:text-[#ED1760] line-clamp-2 mt-1 sm:mt-2 leading-snug transition-colors"
+                      title={book.book_name}
+                    >
+                      {book.book_name}
+                    </h4>
+                    <p className="text-[9px] sm:text-[11px] text-[#64748B] line-clamp-1 mt-0.2 sm:mt-1">
+                      {book.author}
+                    </p>
+                  </div>
+
+                  <div className="mt-1.5 sm:mt-3 pt-1.5 sm:pt-3 border-t border-[#F3DDE7]/60 flex items-center justify-between gap-1">
+                    <div>
+                      <div className="text-[8px] sm:text-[10px] text-[#64748B]">คงเหลือ</div>
+                      <div className="text-[10px] sm:text-xs font-black text-[#111827]">
+                        {book.stock_quantity}{' '}
+                        <span className="text-[8px] sm:text-[10px] font-normal text-[#64748B]">เล่ม</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[8px] sm:text-[10px] text-[#64748B]">ราคา</div>
+                      <div className="text-[11px] sm:text-sm font-black text-[#ED1760]">
+                        {formatBaht(book.price)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* 10.5. YEARLY BOOK & STOCK EXPLORER (หนังสือและสต๊อกแยกตามปีที่พิมพ์) */}
-      <div className="bg-white rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] overflow-hidden">
+      <div className="bg-white rounded-xl sm:rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] overflow-hidden">
         {/* Section Header */}
-        <div className="p-6 border-b border-[#F3DDE7]/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-[14px] bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7] shadow-2xs">
-              <Calendar className="w-5 h-5" />
+        <div className="p-3 sm:p-6 border-b border-[#F3DDE7]/60 flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2.5 rounded-lg sm:rounded-[14px] bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7] shadow-2xs flex-shrink-0">
+              <Calendar className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base sm:text-lg font-extrabold text-[#111827]">
+                <h3 className="text-sm sm:text-lg font-extrabold text-[#111827]">
                   หนังสือและสต๊อกแยกตามปีที่พิมพ์
                 </h3>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7]">
+                <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-[#FCE7F3] text-[#ED1760] border border-[#F3DDE7]">
                   {yearlyBreakdown.length} ปีที่เผยแพร่
                 </span>
               </div>
-              <p className="text-xs text-[#64748B] mt-0.5">
+              <p className="text-[11px] sm:text-xs text-[#64748B] mt-0.5 hidden sm:block">
                 ตรวจสอบรายชื่อหนังสือ ยอดคงเหลือในสต๊อก และมูลค่าสต๊อกของแต่ละปีที่พิมพ์อย่างละเอียด
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
             {/* Search within yearly books */}
-            <div className="relative">
+            <div className="relative flex-1 md:flex-initial">
               <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={yearSearchQuery}
                 onChange={(e) => setYearSearchQuery(e.target.value)}
-                placeholder="ค้นหาชื่อหนังสือ / ผู้แต่ง..."
-                className="pl-8 pr-3 py-1.5 rounded-[12px] bg-[#FCF8FA] border border-[#F3DDE7] text-xs text-[#111827] placeholder-[#64748B] focus:outline-none focus:border-[#ED1760] focus:ring-1 focus:ring-[#ED1760] transition-colors w-48 sm:w-56"
+                placeholder="ค้นหาชื่อหนังสือ..."
+                className="pl-8 pr-3 py-1.5 rounded-[10px] sm:rounded-[12px] bg-[#FCF8FA] border border-[#F3DDE7] text-xs text-[#111827] placeholder-[#64748B] focus:outline-none focus:border-[#ED1760] focus:ring-1 focus:ring-[#ED1760] transition-colors w-full md:w-48 lg:w-56"
               />
             </div>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center bg-[#FCF8FA] p-1 rounded-[12px] border border-[#F3DDE7]">
+            <div className="flex items-center bg-[#FCF8FA] p-0.5 sm:p-1 rounded-[10px] sm:rounded-[12px] border border-[#F3DDE7]">
               <button
                 type="button"
                 onClick={() => setYearViewMode('table')}
-                className={`p-1.5 rounded-[8px] transition-colors cursor-pointer ${
+                className={`p-1.5 rounded-[6px] sm:rounded-[8px] transition-colors cursor-pointer ${
                   yearViewMode === 'table'
                     ? 'bg-[#ED1760] text-white shadow-2xs'
                     : 'text-[#64748B] hover:text-[#111827]'
                 }`}
                 title="มุมมองตาราง"
               >
-                <List className="w-4 h-4" />
+                <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setYearViewMode('cards')}
-                className={`p-1.5 rounded-[8px] transition-colors cursor-pointer ${
+                className={`p-1.5 rounded-[6px] sm:rounded-[8px] transition-colors cursor-pointer ${
                   yearViewMode === 'cards'
                     ? 'bg-[#ED1760] text-white shadow-2xs'
                     : 'text-[#64748B] hover:text-[#111827]'
                 }`}
                 title="มุมมองการ์ด"
               >
-                <LayoutGrid className="w-4 h-4" />
+                <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
         </div>
 
         {/* Year Filter Pills */}
-        <div className="px-6 py-3.5 bg-[#FCF8FA]/70 border-b border-[#F3DDE7]/50 flex items-center gap-2 overflow-x-auto scrollbar-none">
-          <span className="text-xs font-bold text-[#64748B] flex-shrink-0 mr-1 flex items-center gap-1">
-            <Filter className="w-3.5 h-3.5" />
-            <span>เลือกดูตามปี:</span>
+        <div className="px-2.5 sm:px-6 py-2 sm:py-3.5 bg-[#FCF8FA]/70 border-b border-[#F3DDE7]/50 flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
+          <span className="text-[10px] sm:text-xs font-bold text-[#64748B] flex-shrink-0 mr-0.5 sm:mr-1 flex items-center gap-1">
+            <Filter className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <span>ปี:</span>
           </span>
           <button
             type="button"
             onClick={() => setSelectedYearFilter('all')}
-            className={`px-3.5 py-1.5 rounded-[12px] text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1.5 ${
+            className={`px-2 sm:px-3.5 py-0.5 sm:py-1.5 rounded-lg sm:rounded-[12px] text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1 sm:gap-1.5 ${
               selectedYearFilter === 'all'
                 ? 'bg-[#ED1760] text-white shadow-sm shadow-[#ED1760]/20'
                 : 'bg-white text-[#64748B] hover:text-[#ED1760] border border-[#F3DDE7]'
             }`}
           >
-            <span>ทั้งหมดทุกปี</span>
+            <span>ทั้งหมด</span>
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+              className={`text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.2 rounded-full font-bold ${
                 selectedYearFilter === 'all'
                   ? 'bg-white/20 text-white'
                   : 'bg-[#FCE7F3] text-[#ED1760]'
@@ -555,7 +587,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               key={item.year}
               type="button"
               onClick={() => setSelectedYearFilter(item.year.toString())}
-              className={`px-3.5 py-1.5 rounded-[12px] text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1.5 ${
+              className={`px-2 sm:px-3.5 py-0.5 sm:py-1.5 rounded-lg sm:rounded-[12px] text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex-shrink-0 flex items-center gap-1 sm:gap-1.5 ${
                 selectedYearFilter === item.year.toString()
                   ? 'bg-[#ED1760] text-white shadow-sm shadow-[#ED1760]/20'
                   : 'bg-white text-[#64748B] hover:text-[#ED1760] border border-[#F3DDE7]'
@@ -563,13 +595,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             >
               <span>{item.yearLabel}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                className={`text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.2 rounded-full font-bold ${
                   selectedYearFilter === item.year.toString()
                     ? 'bg-white/20 text-white'
                     : 'bg-[#FCE7F3] text-[#ED1760]'
                 }`}
               >
-                {item.titlesCount} ชื่อ · {item.totalCopies} เล่ม
+                {item.titlesCount}
               </span>
             </button>
           ))}
@@ -577,65 +609,62 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
         {/* Content Area 1: Specific Year Selected */}
         {activeYearData ? (
-          <div className="p-6 space-y-6">
+          <div className="p-2.5 sm:p-6 space-y-2.5 sm:space-y-6">
             {/* Year KPI Metric Highlights */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-4 rounded-[16px] bg-[#FCF8FA] border border-[#F3DDE7]">
-                <div className="flex items-center gap-2 text-[#ED1760] text-xs font-bold mb-1">
-                  <BookOpen className="w-4 h-4" />
-                  <span>จำนวนชื่อเรื่องปี {activeYearData.yearLabel}</span>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+              <div className="p-2 sm:p-4 rounded-xl sm:rounded-[16px] bg-[#FCF8FA] border border-[#F3DDE7]">
+                <div className="flex items-center gap-1 sm:gap-2 text-[#ED1760] text-[9px] sm:text-xs font-bold mb-0.5 sm:mb-1">
+                  <BookOpen className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="truncate">จำนวนชื่อเรื่อง</span>
                 </div>
-                <div className="text-2xl font-black text-[#111827] tabular-nums">
-                  {activeYearData.titlesCount} <span className="text-xs font-normal text-[#64748B]">ชื่อเรื่อง</span>
+                <div className="text-base sm:text-2xl font-black text-[#111827] tabular-nums">
+                  {activeYearData.titlesCount} <span className="text-[9px] sm:text-xs font-normal text-[#64748B]">ชื่อเรื่อง</span>
                 </div>
-                <div className="text-[11px] text-[#64748B] mt-1">
-                  คิดเป็น {((activeYearData.titlesCount / (books.length || 1)) * 100).toFixed(0)}% ของทั้งสำนักพิมพ์
-                </div>
-              </div>
-
-              <div className="p-4 rounded-[16px] bg-[#ECFDF5] border border-[#A7F3D0]">
-                <div className="flex items-center gap-2 text-[#10B981] text-xs font-bold mb-1">
-                  <Boxes className="w-4 h-4" />
-                  <span>ยอดสต๊อกคงเหลือในคลัง</span>
-                </div>
-                <div className="text-2xl font-black text-[#065F46] tabular-nums">
-                  {formatNumber(activeYearData.totalCopies)} <span className="text-xs font-normal text-[#047857]">เล่ม</span>
-                </div>
-                <div className="text-[11px] text-[#047857] mt-1">
-                  สต๊อกรวมของหนังสือที่พิมพ์ปี {activeYearData.year}
+                <div className="text-[9px] sm:text-[11px] text-[#64748B] mt-0.2 sm:mt-1 truncate">
+                  {((activeYearData.titlesCount / (books.length || 1)) * 100).toFixed(0)}% ของทั้งคลัง
                 </div>
               </div>
 
-              <div className="p-4 rounded-[16px] bg-[#FFFBEB] border border-[#FDE68A]">
-                <div className="flex items-center gap-2 text-[#D97706] text-xs font-bold mb-1">
-                  <Coins className="w-4 h-4" />
-                  <span>มูลค่าสต๊อกรวมของปีนี้</span>
+              <div className="p-2 sm:p-4 rounded-xl sm:rounded-[16px] bg-[#ECFDF5] border border-[#A7F3D0]">
+                <div className="flex items-center gap-1 sm:gap-2 text-[#10B981] text-[9px] sm:text-xs font-bold mb-0.5 sm:mb-1">
+                  <Boxes className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="truncate">คงเหลือในคลัง</span>
                 </div>
-                <div className="text-xl sm:text-2xl font-black text-[#92400E] tabular-nums truncate">
+                <div className="text-base sm:text-2xl font-black text-[#065F46] tabular-nums">
+                  {formatNumber(activeYearData.totalCopies)} <span className="text-[9px] sm:text-xs font-normal text-[#047857]">เล่ม</span>
+                </div>
+                <div className="text-[9px] sm:text-[11px] text-[#047857] mt-0.2 sm:mt-1 truncate">
+                  สต๊อกพิมพ์ปี {activeYearData.year}
+                </div>
+              </div>
+
+              <div className="p-2 sm:p-4 rounded-xl sm:rounded-[16px] bg-[#FFFBEB] border border-[#FDE68A]">
+                <div className="flex items-center gap-1 sm:gap-2 text-[#D97706] text-[9px] sm:text-xs font-bold mb-0.5 sm:mb-1">
+                  <Coins className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="truncate">มูลค่าสต๊อก</span>
+                </div>
+                <div className="text-sm sm:text-2xl font-black text-[#92400E] tabular-nums truncate">
                   {formatBaht(activeYearData.totalValue)}
                 </div>
-                <div className="text-[11px] text-[#B45309] mt-1">
-                  คำนวณตามราคาปกคงเหลือ
+                <div className="text-[9px] sm:text-[11px] text-[#B45309] mt-0.2 sm:mt-1 truncate">
+                  ตามราคาปกคงเหลือ
                 </div>
               </div>
 
-              <div className="p-4 rounded-[16px] bg-white border border-[#F3DDE7] flex flex-col justify-between">
-                <div className="text-xs font-bold text-[#64748B] mb-1">
-                  สถานะสต๊อกหนังสือปีนี้
+              <div className="p-2 sm:p-4 rounded-xl sm:rounded-[16px] bg-white border border-[#F3DDE7] flex flex-col justify-between">
+                <div className="text-[9px] sm:text-xs font-bold text-[#64748B] mb-0.5 sm:mb-1">
+                  สถานะสต๊อก
                 </div>
-                <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <span className="px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#10B981] font-bold text-[11px]">
-                    มีสินค้า: {activeYearData.inStock}
+                <div className="flex items-center gap-1 sm:gap-2 flex-wrap text-[9px] sm:text-xs">
+                  <span className="px-1 sm:px-2 py-0.2 rounded-full bg-[#ECFDF5] text-[#10B981] font-bold text-[8px] sm:text-[11px]">
+                    มี: {activeYearData.inStock}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#FFFBEB] text-[#F59E0B] font-bold text-[11px]">
+                  <span className="px-1 sm:px-2 py-0.2 rounded-full bg-[#FFFBEB] text-[#F59E0B] font-bold text-[8px] sm:text-[11px]">
                     ใกล้หมด: {activeYearData.lowStock}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#FEF2F2] text-[#EF4444] font-bold text-[11px]">
-                    หมดสต๊อก: {activeYearData.outOfStock}
+                  <span className="px-1 sm:px-2 py-0.2 rounded-full bg-[#FEF2F2] text-[#EF4444] font-bold text-[8px] sm:text-[11px]">
+                    หมด: {activeYearData.outOfStock}
                   </span>
-                </div>
-                <div className="text-[10px] text-[#64748B] mt-2">
-                  ข้อมูลอัปเดตเรียลไทม์ตามฐานข้อมูล
                 </div>
               </div>
             </div>
@@ -1059,38 +1088,38 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* Low Stock and Out of Stock Attention Lists */}
       {(lowStockBooks.length > 0 || outOfStockBooks.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 sm:gap-6">
           {/* Low Stock List */}
-          <div className="bg-white rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#F3DDE7]/60">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-[#F59E0B]" />
-                <h4 className="text-sm font-extrabold text-[#111827]">
+          <div className="bg-white rounded-xl sm:rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] p-3 sm:p-5">
+            <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-[#F3DDE7]/60">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F59E0B]" />
+                <h4 className="text-xs sm:text-sm font-extrabold text-[#111827]">
                   หนังสือใกล้หมดสต๊อก ({lowStockBooks.length})
                 </h4>
               </div>
               <button
                 onClick={onNavigateToStock}
-                className="text-[11px] font-bold text-[#F59E0B] hover:underline cursor-pointer flex items-center gap-1"
+                className="text-[10px] sm:text-[11px] font-bold text-[#F59E0B] hover:underline cursor-pointer flex items-center gap-1"
               >
                 <span>จัดการสต๊อก</span>
                 <ArrowUpRight className="w-3 h-3" />
               </button>
             </div>
-            <div className="divide-y divide-slate-100 mt-2 max-h-56 overflow-y-auto">
+            <div className="divide-y divide-slate-100 mt-1.5 sm:mt-2 max-h-48 sm:max-h-56 overflow-y-auto">
               {lowStockBooks.map((book) => (
-                <div key={book.id} className="py-2.5 flex items-center justify-between gap-3">
+                <div key={book.id} className="py-2 sm:py-2.5 flex items-center justify-between gap-2.5 sm:gap-3">
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-[#111827] truncate">{book.book_name}</p>
-                    <p className="text-[11px] text-[#64748B]">พ.ศ. {book.published_year} · ราคา {formatBaht(book.price)}</p>
+                    <p className="text-[10px] sm:text-[11px] text-[#64748B]">พ.ศ. {book.published_year} · ราคา {formatBaht(book.price)}</p>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                     <span className="text-xs font-extrabold text-[#F59E0B] tabular-nums">
                       {book.stock_quantity} เล่ม
                     </span>
                     <button
                       onClick={() => onSelectBook(book)}
-                      className="text-[10px] font-bold text-[#ED1760] bg-[#FCE7F3] px-2 py-0.5 rounded-[6px]"
+                      className="text-[9px] sm:text-[10px] font-bold text-[#ED1760] bg-[#FCE7F3] px-1.5 sm:px-2 py-0.5 rounded-[6px]"
                     >
                       ดู
                     </button>
@@ -1101,41 +1130,41 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
 
           {/* Out of Stock List */}
-          <div className="bg-white rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#F3DDE7]/60">
-              <div className="flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-[#EF4444]" />
-                <h4 className="text-sm font-extrabold text-[#111827]">
+          <div className="bg-white rounded-xl sm:rounded-[20px] border border-[#F3DDE7] shadow-[0_4px_16px_rgba(237,23,96,0.03)] p-3 sm:p-5">
+            <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-[#F3DDE7]/60">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#EF4444]" />
+                <h4 className="text-xs sm:text-sm font-extrabold text-[#111827]">
                   หนังสือหมดสต๊อก ({outOfStockBooks.length})
                 </h4>
               </div>
               <button
                 onClick={onNavigateToStock}
-                className="text-[11px] font-bold text-[#EF4444] hover:underline cursor-pointer flex items-center gap-1"
+                className="text-[10px] sm:text-[11px] font-bold text-[#EF4444] hover:underline cursor-pointer flex items-center gap-1"
               >
                 <span>รับเข้าคลัง</span>
                 <ArrowUpRight className="w-3 h-3" />
               </button>
             </div>
-            <div className="divide-y divide-slate-100 mt-2 max-h-56 overflow-y-auto">
+            <div className="divide-y divide-slate-100 mt-1.5 sm:mt-2 max-h-48 sm:max-h-56 overflow-y-auto">
               {outOfStockBooks.length === 0 ? (
-                <div className="py-6 text-center text-xs text-[#10B981] font-semibold">
+                <div className="py-4 sm:py-6 text-center text-xs text-[#10B981] font-semibold">
                   ไม่มีรายการหนังสือที่หมดสต๊อก
                 </div>
               ) : (
                 outOfStockBooks.map((book) => (
-                  <div key={book.id} className="py-2.5 flex items-center justify-between gap-3">
+                  <div key={book.id} className="py-2 sm:py-2.5 flex items-center justify-between gap-2.5 sm:gap-3">
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-[#111827] truncate">{book.book_name}</p>
-                      <p className="text-[11px] text-[#64748B]">พ.ศ. {book.published_year} · ราคา {formatBaht(book.price)}</p>
+                      <p className="text-[10px] sm:text-[11px] text-[#64748B]">พ.ศ. {book.published_year} · ราคา {formatBaht(book.price)}</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                       <span className="text-xs font-extrabold text-[#EF4444]">
-                        หมดสต๊อก (0 เล่ม)
+                        หมด (0 เล่ม)
                       </span>
                       <button
                         onClick={() => onSelectBook(book)}
-                        className="text-[10px] font-bold text-[#ED1760] bg-[#FCE7F3] px-2 py-0.5 rounded-[6px]"
+                        className="text-[9px] sm:text-[10px] font-bold text-[#ED1760] bg-[#FCE7F3] px-1.5 sm:px-2 py-0.5 rounded-[6px]"
                       >
                         ดู
                       </button>

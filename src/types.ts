@@ -30,6 +30,8 @@ export interface Book {
   created_by: string;
   description?: string;
   category?: string;
+  is_bestseller?: boolean;
+  sales_count?: number;
 }
 
 export type TransactionType = 'in' | 'increase' | 'decrease';
