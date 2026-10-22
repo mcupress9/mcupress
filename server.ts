@@ -11,7 +11,6 @@ import {
   deleteBook,
   adjustStock,
   postalSale,
-  seedBooksIfEmpty,
 } from './src/db/books.ts';
 import {
   getAllTransactions,
