@@ -581,6 +581,22 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
         </div>
       </div>
 
+      {books.length === 0 ? (
+        <div className="bg-white rounded-2xl sm:rounded-[22px] border border-[#F3DDE7] p-8 sm:p-14 text-center max-w-lg mx-auto shadow-2xs space-y-4 my-6 animate-in fade-in">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#FCE7F3] text-[#ED1760] flex items-center justify-center mx-auto shadow-sm">
+            <BookOpen className="w-8 h-8 sm:w-10 sm:h-10" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-base sm:text-xl font-extrabold text-[#111827]">
+              ยังไม่มีข้อมูลสำหรับสรุปรายงาน
+            </h3>
+            <p className="text-xs sm:text-sm text-[#64748B] max-w-sm mx-auto leading-relaxed">
+              เมื่อเริ่มต้นบันทึกข้อมูลหนังสือและรายการสต๊อกเข้าสู่ระบบ ระบบจะคำนวณสถิติ แสดงกราฟ และจัดทำรายงานสรุปให้โดยอัตโนมัติ
+            </p>
+          </div>
+        </div>
+      ) : (
+      <>
       {/* Main Feature Tabs Switcher (Yearly Breakdown vs General Overview) */}
       <div className="bg-white p-1 sm:p-1.5 rounded-xl sm:rounded-[18px] border border-[#F3DDE7] shadow-2xs flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
         <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
@@ -1696,6 +1712,8 @@ export const SummaryPage: React.FC<SummaryPageProps> = ({ books, onSelectBook })
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

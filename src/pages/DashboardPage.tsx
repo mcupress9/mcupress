@@ -362,7 +362,34 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
+      {books.length === 0 && (
+        <div className="bg-white rounded-2xl sm:rounded-[22px] border border-[#F3DDE7] p-8 sm:p-14 text-center max-w-2xl mx-auto shadow-2xs space-y-4 my-4 sm:my-8 animate-in fade-in">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#FCE7F3] text-[#ED1760] flex items-center justify-center mx-auto shadow-sm">
+            <BookOpen className="w-8 h-8 sm:w-10 sm:h-10" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-lg sm:text-2xl font-black text-[#111827]">
+              ยินดีต้อนรับสู่ระบบสต๊อกหนังสือ สำนักพิมพ์ มจร
+            </h3>
+            <p className="text-xs sm:text-sm text-[#64748B] max-w-md mx-auto leading-relaxed">
+              ระบบคลาวด์เปิดทำงานเรียบร้อยและพร้อมใช้งานทันที คุณสามารถเริ่มต้นด้วยการลงทะเบียนเพิ่มหนังสือเล่มแรกเข้าสู่คลังสต๊อก
+            </p>
+          </div>
+          <div className="pt-2 flex items-center justify-center gap-3">
+            <button
+              onClick={onNavigateToAddBook}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-[14px] bg-[#ED1760] hover:bg-[#D41456] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#ED1760]/20 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ บันทึกหนังสือเล่มแรก</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 10. BESTSELLER BOOKS SHOWCASE (หนังสือขายดีประจำสำนักพิมพ์ มจร) */}
+      {books.length > 0 && (
+      <>
       <div className="bg-gradient-to-br from-white via-[#FFF7FA] to-[#FCE7F3]/30 rounded-xl sm:rounded-[22px] border border-[#F3DDE7] shadow-[0_4px_20px_rgba(237,23,96,0.04)] p-3 sm:p-7 space-y-2.5 sm:space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 pb-2.5 sm:pb-4 border-b border-[#F3DDE7]">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -1170,6 +1197,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

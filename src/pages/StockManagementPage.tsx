@@ -313,6 +313,19 @@ export const StockManagementPage: React.FC<StockManagementPageProps> = ({
             </div>
           )}
 
+          {books.length === 0 ? (
+            <div className="py-12 px-4 text-center space-y-3">
+              <div className="w-14 h-14 rounded-full bg-[#FCE7F3] text-[#ED1760] flex items-center justify-center mx-auto shadow-2xs">
+                <Package className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-extrabold text-[#111827]">ยังไม่มีหนังสือในคลัง</h4>
+                <p className="text-xs text-[#64748B] max-w-xs mx-auto leading-relaxed">
+                  กรุณาเพิ่มหนังสือเล่มแรกเข้าสู่ระบบก่อน เพื่อเริ่มต้นจัดการสต๊อก รับเข้า หรือบันทึกการขาย
+                </p>
+              </div>
+            </div>
+          ) : (
           <form onSubmit={handleAdjustSubmit} className="space-y-3 sm:space-y-4">
             {/* 1. Search / Filter & Select Book */}
             <div>
@@ -628,6 +641,7 @@ export const StockManagementPage: React.FC<StockManagementPageProps> = ({
               </span>
             </button>
           </form>
+          )}
         </div>
 
         {/* Right: Recent Stock Logs */}

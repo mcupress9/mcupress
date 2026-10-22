@@ -23,12 +23,6 @@ import {
 import { storageService } from '../services/storage';
 import { useAuth } from '../context/AuthContext';
 import { FONT_THEMES, themeService } from '../services/theme';
-import {
-  subscribeSupabaseStatus,
-  SupabaseConnectionStatus,
-  SUPABASE_SCHEMA_SQL,
-  SUPABASE_URL,
-} from '../services/supabase';
 
 interface SettingsPageProps {
   onDataReset: () => void;
@@ -38,23 +32,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onDataReset }) => {
   const { isAdmin } = useAuth();
   const [notification, setNotification] = useState('');
   const [currentFont, setCurrentFont] = useState(() => themeService.getCurrentFontTheme());
-  const [supabaseStatus, setSupabaseStatus] = useState<SupabaseConnectionStatus>('connecting');
-  const [isCopiedSql, setIsCopiedSql] = useState(false);
-  const [showSqlPreview, setShowSqlPreview] = useState(false);
-
-  useEffect(() => {
-    const unsub = subscribeSupabaseStatus((status) => {
-      setSupabaseStatus(status);
-    });
-    return () => unsub();
-  }, []);
-
-  const handleCopySql = () => {
-    navigator.clipboard.writeText(SUPABASE_SCHEMA_SQL);
-    setIsCopiedSql(true);
-    setNotification('คัดลอกคำสั่ง SQL Schema สำหรับสร้างตารางบน Supabase เรียบร้อยแล้ว');
-    setTimeout(() => setIsCopiedSql(false), 3000);
-  };
 
   const handleFontSelect = (themeId: string) => {
     themeService.applyFontTheme(themeId);
@@ -353,7 +330,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onDataReset }) => {
         </div>
       </div>
 
-      {/* 4. Cloud Database & Real-time Sync Status (Supabase) */}
+      {/* 4. Cloud Database & Persistent Storage (Cloud SQL PostgreSQL) */}
       <div className="bg-white rounded-3xl border border-[#F3DDE7] shadow-[0_2px_14px_rgba(237,23,96,0.03)] p-6 sm:p-8 space-y-5">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 flex-wrap gap-3">
           <div className="flex items-center gap-3">
@@ -363,116 +340,47 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onDataReset }) => {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-extrabold text-slate-900">
-                  ฐานข้อมูลคลาวด์ออนไลน์ (Cloud Database: Supabase PostgreSQL)
+                  ฐานข้อมูลคลาวด์ถาวร (Cloud Database: PostgreSQL บน Cloud SQL)
                 </h3>
-                {supabaseStatus === 'connected' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
-                    ⚡ เชื่อมต่อสมบูรณ์ ซิงค์อัตโนมัติ
-                  </span>
-                )}
-                {supabaseStatus === 'connecting' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                    กำลังเชื่อมต่อ...
-                  </span>
-                )}
-                {supabaseStatus === 'tables_missing' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                    ยังไม่ได้สร้างตาราง (ต้องการการรัน SQL)
-                  </span>
-                )}
-                {supabaseStatus === 'fallback_local' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                    โหมด LocalStorage Fallback
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
+                  ⚡ บันทึกถาวร ซิงค์ข้อมูลข้ามเครื่องอัตโนมัติ
+                </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                ข้อมูลหนังสือและประวัติการเคลื่อนไหวสต๊อกจะถูกซิงค์ผ่าน Supabase Realtime โดยอัตโนมัติ พร้อมระบบ LocalStorage Fallback ไร้กังวลเรื่องข้อมูลสูญหาย
+                ข้อมูลหนังสือและการเคลื่อนไหวสต๊อกทั้งหมดถูกจัดเก็บลงฐานข้อมูล PostgreSQL บน Google Cloud SQL เรียบร้อยแล้ว เข้าใช้งานจากคอมพิวเตอร์หรืออุปกรณ์เครื่องใดข้อมูลก็ยังคงอยู่ครบถ้วน
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCopySql}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[12px] bg-[#ED1760] hover:bg-[#D41456] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
-            >
-              {isCopiedSql ? (
-                <>
-                  <Check className="w-3.5 h-3.5" />
-                  <span>คัดลอก SQL แล้ว!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>คัดลอก Schema SQL</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => setShowSqlPreview(!showSqlPreview)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-[12px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
-            >
-              <Code className="w-3.5 h-3.5" />
-              <span>{showSqlPreview ? 'ซ่อนโค้ด' : 'ดูคำสั่ง SQL'}</span>
-            </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div className="p-3.5 rounded-2xl bg-[#ECFDF5]/60 border border-[#A7F3D0]/60">
             <div className="text-[10px] font-bold text-[#065F46] uppercase tracking-wider mb-1">
-              สถานะการเชื่อมต่อ (Supabase Status)
+              สถานะการบันทึกข้อมูล (Sync Status)
             </div>
             <div className="text-xs sm:text-sm font-extrabold text-[#064E3B] flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-[#10B981] flex-shrink-0" />
-              <span className="line-clamp-1">
-                {supabaseStatus === 'connected'
-                  ? '⚡ เชื่อมต่ออยู่ (Realtime Sync)'
-                  : supabaseStatus === 'tables_missing'
-                  ? '⚠️ ยังไม่ได้รันสร้างตาราง'
-                  : 'ออนไลน์ / โหมด Local'}
-              </span>
+              <span>ออนไลน์และซิงค์แบบเรียลไทม์</span>
             </div>
           </div>
           <div className="p-3.5 rounded-2xl bg-slate-50 border border-[#F3DDE7]">
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-              Supabase Project Endpoint
-            </div>
-            <div className="text-xs font-mono font-bold text-slate-800 line-clamp-1" title={SUPABASE_URL}>
-              {SUPABASE_URL || 'bofzxwwdzhoebuooeiqx.supabase.co'}
-            </div>
-          </div>
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-[#F3DDE7]">
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-              โครงสร้างตาราง (Database Tables)
+              ระบบฐานข้อมูล (Database Engine)
             </div>
             <div className="text-xs font-bold text-slate-800">
-              public.books, transactions, users
+              Cloud SQL PostgreSQL (asia-southeast1)
+            </div>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-[#F3DDE7]">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              ตารางข้อมูลในระบบ (Database Tables)
+            </div>
+            <div className="text-xs font-bold text-slate-800">
+              books, transactions, users
             </div>
           </div>
         </div>
-
-        {showSqlPreview && (
-          <div className="pt-3 border-t border-slate-100 space-y-2 animate-in fade-in">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800">คำสั่ง PostgreSQL DDL Schema สำหรับ Supabase:</span>
-              <button
-                onClick={handleCopySql}
-                className="text-[11px] font-bold text-[#ED1760] hover:underline cursor-pointer flex items-center gap-1"
-              >
-                <Copy className="w-3 h-3" />
-                <span>คัดลอกโค้ดทั้งหมด</span>
-              </button>
-            </div>
-            <pre className="p-4 rounded-2xl bg-[#111827] text-slate-100 font-mono text-[11px] leading-relaxed max-h-56 overflow-y-auto border border-slate-800">
-              {SUPABASE_SCHEMA_SQL}
-            </pre>
-          </div>
-        )}
       </div>
 
       {/* 5. Database Backup & Restore */}
@@ -534,23 +442,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onDataReset }) => {
 
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
           <div className="text-xs text-slate-500">
-            การจัดการชุดข้อมูล: ลบข้อมูลหนังสือทั้งหมดเพื่อเริ่มกรอกข้อมูลจริง หรือรีเซ็ตเป็นชุดข้อมูลตัวอย่าง
+            การจัดการข้อมูล: ล้างข้อมูลเพื่อเริ่มต้นบันทึกข้อมูลสิ่งพิมพ์จริงของสำนักพิมพ์
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleClearAllBooks}
               className="px-4 py-2 rounded-xl text-xs font-bold text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200/80 transition-colors flex items-center gap-1.5 cursor-pointer"
-              title="ลบหนังสือและประวัติการเคลื่อนไหวสต๊อกทั้งหมด เพื่อเริ่มบันทึกข้อมูลของตนเอง"
+              title="ล้างข้อมูลหนังสือและประวัติสต๊อกทั้งหมด เพื่อเริ่มต้นใช้งานใหม่แบบเว็ปเปล่า"
             >
               <Trash2 className="w-3.5 h-3.5 text-red-600" />
-              <span>ลบข้อมูลหนังสือทั้งหมด (เริ่มกรอกเอง)</span>
-            </button>
-            <button
-              onClick={handleResetDefaults}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
-              <span>โหลดตัวอย่าง (Default Demo)</span>
+              <span>ล้างข้อมูลหนังสือทั้งหมด (เริ่มใช้งานจริง)</span>
             </button>
           </div>
         </div>

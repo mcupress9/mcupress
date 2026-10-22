@@ -1,13 +1,12 @@
 import { Book, StockTransaction, User, StockStatus, SummaryStats, TransactionType } from '../types';
-import { supabase, setSupabaseStatus, isTableMissingError } from './supabase';
 
 const STORAGE_KEYS = {
-  BOOKS: 'mcu_press_books_v1',
-  TRANSACTIONS: 'mcu_press_transactions_v1',
-  USERS: 'mcu_press_users_v1',
-  CURRENT_USER: 'mcu_press_active_user_v1',
-  SETTINGS: 'mcu_press_settings_v1',
-  ADD_BOOK_DRAFT: 'mcu_press_add_book_draft_v1',
+  BOOKS: 'mcu_press_books_v2',
+  TRANSACTIONS: 'mcu_press_transactions_v2',
+  USERS: 'mcu_press_users_v2',
+  CURRENT_USER: 'mcu_press_active_user_v2',
+  SETTINGS: 'mcu_press_settings_v2',
+  ADD_BOOK_DRAFT: 'mcu_press_add_book_draft_v2',
 };
 
 export const INITIAL_USERS: User[] = [
@@ -43,183 +42,7 @@ export const INITIAL_USERS: User[] = [
   },
 ];
 
-export const INITIAL_BOOKS: Book[] = [
-  {
-    id: 'mcu-b01',
-    book_name: 'พระไตรปิฎกฉบับภาษาไทย มหาจุฬาลงกรณราชวิทยาลัย (ชุดสังเขปสารัตถะ)',
-    author: 'คณะกรรมการการตรวจชำระพระไตรปิฎก มจร',
-    pages: 680,
-    isbn: '978-616-300-112-4',
-    published_year: 2567,
-    price: 450,
-    cover_image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
-    stock_quantity: 48,
-    created_at: '2024-01-10T09:00:00Z',
-    updated_at: '2024-01-10T09:00:00Z',
-    created_by: 'พระมหาคณัย สุมน, ดร.',
-    category: 'พระไตรปิฎกและคัมภีร์ศึกษา',
-    description: 'ประมวลสารัตถะสำคัญแห่งพระไตรปิฎก ทั้งพระวินัย พระสูตร และพระอภิธรรม เพื่อการศึกษาค้นคว้าของคณาจารย์และนิสิต',
-    is_bestseller: true,
-    sales_count: 1420,
-  },
-  {
-    id: 'mcu-b02',
-    book_name: 'พุทธธรรมและสังคมศาสตร์ร่วมสมัย',
-    author: 'ศ.ดร.สมภาร พรหมทา และคณาจารย์ มจร',
-    pages: 340,
-    isbn: '978-616-300-245-9',
-    published_year: 2567,
-    price: 290,
-    cover_image: 'https://images.unsplash.com/photo-1532012164546-f432f2e3edd3?w=600&auto=format&fit=crop&q=80',
-    stock_quantity: 26,
-    created_at: '2024-02-14T11:20:00Z',
-    updated_at: '2024-02-14T11:20:00Z',
-    created_by: 'พระมหาคณัย สุมน, ดร.',
-    category: 'พุทธปรัชญาและสังคม',
-    description: 'การนำหลักธรรมคำสอนในพระพุทธศาสนามาประยุกต์และวิเคราะห์บริบทสังคม เศรษฐกิจ และความเปลี่ยนแปลงของโลกยุคใหม่',
-    is_bestseller: true,
-    sales_count: 980,
-  },
-  {
-    id: 'mcu-b03',
-    book_name: 'ประวัติศาสตร์พระพุทธศาสนาในเอเชียและสุวรรณภูมิ',
-    author: 'พระธรรมโกศาจารย์ (ประยูร ธมฺมจิตฺโต)',
-    pages: 520,
-    isbn: '978-616-300-388-1',
-    published_year: 2566,
-    price: 380,
-    cover_image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&auto=format&fit=crop&q=80',
-    stock_quantity: 8,
-    created_at: '2023-05-18T14:00:00Z',
-    updated_at: '2023-11-02T10:30:00Z',
-    created_by: 'นายสมชาย เจริญสุข',
-    category: 'ประวัติศาสตร์พระพุทธศาสนา',
-    description: 'ลำดับเหตุการณ์การเผยแผ่และพัฒนาการของพระพุทธศาสนาตั้งแต่อินเดีย ลังกา สู่ดินแดนสุวรรณภูมิและประเทศไทย',
-    is_bestseller: true,
-    sales_count: 850,
-  },
-  {
-    id: 'mcu-b04',
-    book_name: 'พุทธจิตวิทยาประยุกต์เพื่อการพัฒนาจิตและปัญญา',
-    author: 'รศ.ดร.สุรพล สุคนธปฏิภาค',
-    pages: 280,
-    isbn: '978-616-300-412-3',
-    published_year: 2566,
-    price: 260,
-    cover_image: 'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=600&auto=format&fit=crop&q=80',
-    stock_quantity: 0,
-    created_at: '2023-08-22T08:15:00Z',
-    updated_at: '2024-03-01T16:45:00Z',
-    created_by: 'นางสาววราภรณ์ วงศ์สว่าง',
-    category: 'พุทธจิตวิทยา',
-    description: 'หลักการทางจิตวิทยาพุทธบูรณาการเพื่อการบำบัด เยียวยา และพัฒนาศักยภาพแห่งชีวิตด้วยสติและสมาธิ',
-    sales_count: 420,
-  },
-  {
-    id: 'mcu-b05',
-    book_name: 'วิสุทธิมรรค ฉบับแปลสังเคราะห์ทางวิชาการ',
-    author: 'พระพรหมบัณฑิต (ประยูร ธมฺมจิตฺโต, ศ., ดร.)',
-    pages: 890,
-    isbn: '978-616-300-501-4',
-    published_year: 2565,
-    price: 650,
-    cover_image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&auto=format&fit=crop&q=80',
-    stock_quantity: 35,
-    created_at: '2022-09-05T13:40:00Z',
-    updated_at: '2022-09-05T13:40:00Z',
-    created_by: 'พระมหาคณัย สุมน, ดร.',
-    category: 'พระไตรปิฎกและคัมภีร์ศึกษา',
-    description: 'คัมภีร์อธิบายศีล สมาธิ ปัญญา อันเป็นหนทางสู่ความบริสุทธิ์หมดจดแห่งจิตใจ จัดพิมพ์เป็นคู่มืออ้างอิงวิทยานิพนธ์',
-    is_bestseller: true,
-    sales_count: 1250,
-  },
-  {
-    id: 'mcu-b06',
-    book_name: 'สันติวิธีและทักษะการเจรจาไกล่เกลี่ยข้อพิพาทตามแนวพุทธ',
-    author: 'พระครูสุธีจริยวัฒน์, ดร. และสถาบันสันติศึกษา มจร',
-    pages: 310,
-    isbn: '978-616-300-619-6',
-    published_year: 2565,
-    price: 320,
-    cover_image: 'https://images.unsplash.com/photo-1476275466078-4007374efbbe?w=600&auto=format&fit=crop&q=80',
-    stock_quantity: 5,
-    created_at: '2022-11-12T10:10:00Z',
-    updated_at: '2023-12-15T09:20:00Z',
-    created_by: 'นายสมชาย เจริญสุข',
-    category: 'สันติศึกษา',
-    description: 'องค์ความรู้กระบวนทัศน์สันติวิธี วิถีพุทธ และแนวทางการจัดการความขัดแย้งในสังคมพหุวัฒนธรรม',
-    sales_count: 360,
-  },
-  {
-    id: 'mcu-b07',
-    book_name: 'อภิธรรมมัตถสังคหะและปรมัตถธรรมสังเขป',
-    author: 'พระราชวรมุนี (พล อาภากโร, ดร.)',
-    pages: 420,
-    isbn: '978-616-300-723-0',
-    published_year: 2564,
-    price: 350,
-    cover_image: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=600&auto=format&fit=crop&q=80',
-    stock_quantity: 19,
-    created_at: '2021-04-18T15:20:00Z',
-    updated_at: '2021-04-18T15:20:00Z',
-    created_by: 'พระมหาคณัย สุมน, ดร.',
-    category: 'พระไตรปิฎกและคัมภีร์ศึกษา',
-    description: 'คู่มือการศึกษาจิต เจตสิก รูป นิพพาน สำหรับนิสิตระดับปริญญาตรีและบัณฑิตศึกษา',
-    sales_count: 510,
-  },
-  {
-    id: 'mcu-b08',
-    book_name: 'มิลินทปัญหาและพุทธปรัชญาเปรียบเทียบ',
-    author: 'ศ.พิเศษ เสฐียรพงษ์ วรรณปก (ราชบัณฑิต)',
-    pages: 360,
-    isbn: '978-616-300-844-2',
-    published_year: 2564,
-    price: 280,
-    cover_image: 'https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=600&auto=format&fit=crop&q=80',
-    stock_quantity: 0,
-    created_at: '2021-07-29T11:00:00Z',
-    updated_at: '2024-02-10T14:30:00Z',
-    created_by: 'นางสาววราภรณ์ วงศ์สว่าง',
-    category: 'พุทธปรัชญาและสังคม',
-    description: 'บทสนทนาอันลึกซึ้งระหว่างพระนาคเสนกับพระยามิลินท์ ไขข้อข้องใจในปรัชญาชีวิตและการดับทุกข์',
-    sales_count: 480,
-  },
-  {
-    id: 'mcu-b09',
-    book_name: 'ระเบียบวิธีวิจัยทางพระพุทธศาสนาและนวัตกรรมการศึกษา',
-    author: 'พระธรรมวัชรบัณฑิต (สมจินต์ สมฺมาปญฺโญ, ศ., ดร.)',
-    pages: 460,
-    isbn: '978-616-300-915-9',
-    published_year: 2567,
-    price: 390,
-    cover_image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&auto=format&fit=crop&q=80',
-    stock_quantity: 62,
-    created_at: '2024-01-20T08:00:00Z',
-    updated_at: '2024-01-20T08:00:00Z',
-    created_by: 'พระมหาคณัย สุมน, ดร.',
-    category: 'ระเบียบวิธีวิจัย',
-    description: 'ตำราหลักว่าด้วยการออกแบบงานวิจัยทางพระพุทธศาสนา ทั้งเชิงคุณภาพ เชิงปริมาณ และการสังเคราะห์ตัวบทคัมภีร์',
-    is_bestseller: true,
-    sales_count: 1120,
-  },
-  {
-    id: 'mcu-b10',
-    book_name: 'ภาษาบาลีเพื่อการค้นคว้าพระไตรปิฎก (เล่ม ๑)',
-    author: 'พระมหาบุญเลิศ อินฺทปญฺโญ, ศ.ดร.',
-    pages: 390,
-    isbn: '978-616-300-982-1',
-    published_year: 2566,
-    price: 310,
-    cover_image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&auto=format&fit=crop&q=80',
-    stock_quantity: 4,
-    created_at: '2023-04-12T13:15:00Z',
-    updated_at: '2024-02-28T10:00:00Z',
-    created_by: 'นายสมชาย เจริญสุข',
-    category: 'ภาษาบาลีและสันสกฤต',
-    description: 'หลักไวยากรณ์บาลี โครงสร้างประโยค และการแปลความหมายศัพท์ในพระไตรปิฎกสำหรับนักวิชาการ',
-    sales_count: 290,
-  },
-];
+export const INITIAL_BOOKS: Book[] = [];
 
 export const INITIAL_TRANSACTIONS: StockTransaction[] = [];
 
@@ -236,7 +59,48 @@ export function getStockStatusText(quantity: number): string {
   return 'หมดสต๊อก';
 }
 
-// Storage helpers with Supabase Synchronization & LocalStorage Fallback
+function parseBook(b: any): Book {
+  return {
+    id: b.id,
+    book_name: b.book_name,
+    author: b.author,
+    pages: Number(b.pages) || 0,
+    isbn: b.isbn || '',
+    published_year: Number(b.published_year) || 2567,
+    price: Number(b.price) || 0,
+    cover_image: b.cover_image || '',
+    stock_quantity: Number(b.stock_quantity) || 0,
+    created_at: b.created_at,
+    updated_at: b.updated_at,
+    created_by: b.created_by || '',
+    category: b.category,
+    description: b.description,
+    is_bestseller: Boolean(b.is_bestseller),
+    sales_count: Number(b.sales_count) || 0,
+  };
+}
+
+function parseTransaction(t: any): StockTransaction {
+  return {
+    id: t.id,
+    book_id: t.book_id,
+    book_name: t.book_name,
+    transaction_type: t.transaction_type,
+    quantity: Number(t.quantity) || 0,
+    stock_before: Number(t.stock_before) || 0,
+    stock_after: Number(t.stock_after) || 0,
+    created_at: t.created_at,
+    created_by: t.created_by || '',
+    note: t.note || '',
+    tracking_number: t.tracking_number,
+    price: t.price ? Number(t.price) : undefined,
+    total_price: t.total_price ? Number(t.total_price) : undefined,
+    customer_name: t.customer_name,
+    sale_channel: t.sale_channel,
+  };
+}
+
+// Storage helpers with Cloud SQL PostgreSQL Persistence and LocalStorage cache
 export const storageService = {
   // Books
   getBooks(): Book[] {
@@ -246,30 +110,9 @@ export const storageService = {
         localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(INITIAL_BOOKS));
         return INITIAL_BOOKS;
       }
-      const parsed: Book[] = JSON.parse(data);
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-      // Migrate or enrich initial books if they don't have bestseller flags yet
-      let hasUpdates = false;
-      const enriched = parsed.map((book) => {
-        const initialMatch = INITIAL_BOOKS.find((ib) => ib.id === book.id);
-        if (initialMatch) {
-          if (book.is_bestseller === undefined && initialMatch.is_bestseller !== undefined) {
-            book.is_bestseller = initialMatch.is_bestseller;
-            hasUpdates = true;
-          }
-          if (book.sales_count === undefined && initialMatch.sales_count !== undefined) {
-            book.sales_count = initialMatch.sales_count;
-            hasUpdates = true;
-          }
-        }
-        return book;
-      });
-      if (hasUpdates) {
-        localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(enriched));
-      }
-      return enriched;
+      const parsed: any[] = JSON.parse(data);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(parseBook);
     } catch {
       return [];
     }
@@ -286,13 +129,10 @@ export const storageService = {
     window.dispatchEvent(new Event('mcu_books_updated'));
     window.dispatchEvent(new Event('mcu_transactions_updated'));
 
-    if (supabase) {
-      try {
-        await supabase.from('transactions').delete().neq('id', '_all_clear_guard_');
-        await supabase.from('books').delete().neq('id', '_all_clear_guard_');
-      } catch (e) {
-        console.warn('Error clearing books in Supabase:', e);
-      }
+    try {
+      await fetch('/api/reset-defaults', { method: 'POST' });
+    } catch (e) {
+      console.warn('Network sync notice:', e);
     }
   },
 
@@ -311,7 +151,7 @@ export const storageService = {
     books.unshift(newBook);
     this.saveBooks(books);
 
-    // Also record initial stock transaction if stock > 0
+    // Initial stock transaction if stock > 0
     if (newBook.stock_quantity > 0) {
       this.addTransaction({
         book_id: newBook.id,
@@ -325,22 +165,20 @@ export const storageService = {
       });
     }
 
-    // Sync new book to Supabase cloud database
-    if (supabase) {
-      try {
-        const { error } = await supabase.from('books').insert(newBook);
-        if (error) {
-          if (isTableMissingError(error)) {
-            setSupabaseStatus('tables_missing');
-          } else {
-            console.error('Supabase insert error (cached locally):', error.message);
-          }
-        } else {
-          setSupabaseStatus('connected');
-        }
-      } catch {
-        setSupabaseStatus('fallback_local');
+    // Persist to Cloud SQL PostgreSQL database
+    try {
+      const res = await fetch('/api/books', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBook),
+      });
+      if (res.ok) {
+        const remoteCreated = await res.json();
+        const updatedList = this.getBooks().map((b) => (b.id === newBook.id ? parseBook(remoteCreated) : b));
+        this.saveBooks(updatedList);
       }
+    } catch (err) {
+      console.warn('Cloud sync error (saved locally):', err);
     }
 
     return newBook;
@@ -380,19 +218,15 @@ export const storageService = {
       });
     }
 
-    // Sync book update to Supabase
-    if (supabase) {
-      try {
-        const { error } = await supabase
-          .from('books')
-          .update(updatedBook)
-          .eq('id', updatedBook.id);
-        if (error && isTableMissingError(error)) {
-          setSupabaseStatus('tables_missing');
-        }
-      } catch (err) {
-        console.warn('Supabase update sync error:', err);
-      }
+    // Persist update to Cloud SQL PostgreSQL
+    try {
+      await fetch(`/api/books/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...updates, updaterName }),
+      });
+    } catch (err) {
+      console.warn('Cloud sync error during update:', err);
     }
 
     return updatedBook;
@@ -409,28 +243,19 @@ export const storageService = {
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
     window.dispatchEvent(new Event('mcu_transactions_updated'));
 
-    // Sync deletion to Supabase
-    if (supabase) {
-      try {
-        // Delete dependent transactions first to avoid foreign key violations
-        await supabase.from('transactions').delete().eq('book_id', id);
-        const { error } = await supabase.from('books').delete().eq('id', id);
-        if (error) {
-          if (isTableMissingError(error)) {
-            setSupabaseStatus('tables_missing');
-          } else {
-            console.error('Supabase delete error:', error);
-          }
-        }
-      } catch (err) {
-        console.warn('Network issue during Supabase delete:', err);
-      }
+    // Persist deletion to Cloud SQL PostgreSQL
+    try {
+      await fetch(`/api/books/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (err) {
+      console.warn('Cloud sync error during book deletion:', err);
     }
 
     return true;
   },
 
-  // Stock Adjustment (รับเข้า / ขาย / ชำรุด)
+  // Stock Adjustment (รับเข้า / ปรับเพิ่ม / ขาย / ชำรุด)
   async adjustStock(
     bookId: string,
     type: TransactionType,
@@ -450,11 +275,9 @@ export const storageService = {
       stockAfter = stockBefore + quantity;
     } else if (type === 'decrease') {
       stockAfter = Math.max(0, stockBefore - quantity);
-      // Increment sales_count on stock decrease / sales
       book.sales_count = (book.sales_count || 0) + quantity;
     } else if (type === 'damage') {
       stockAfter = Math.max(0, stockBefore - quantity);
-      // Damaged items deducted from stock without incrementing sales
     }
 
     book.stock_quantity = stockAfter;
@@ -482,28 +305,21 @@ export const storageService = {
       note: note || defaultNote,
     });
 
-    // Sync adjusted book to Supabase
-    if (supabase) {
-      try {
-        const { error } = await supabase
-          .from('books')
-          .update({
-            stock_quantity: stockAfter,
-            updated_at: book.updated_at,
-          })
-          .eq('id', book.id);
-        if (error && isTableMissingError(error)) {
-          setSupabaseStatus('tables_missing');
-        }
-      } catch (err) {
-        console.warn('Supabase stock adjustment sync error:', err);
-      }
+    // Persist to Cloud SQL PostgreSQL
+    try {
+      await fetch(`/api/books/${bookId}/adjust-stock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, quantity, operatorName, note }),
+      });
+    } catch (err) {
+      console.warn('Cloud sync error during adjustStock:', err);
     }
 
     return { book, transaction };
   },
 
-  // Record Postal Book Sale (การขายหนังสือแบบส่งไปรษณีย์)
+  // Record Postal Book Sale
   async recordPostalSale(params: {
     bookId: string;
     quantity: number;
@@ -563,23 +379,15 @@ export const storageService = {
       sale_channel: 'postal',
     });
 
-    // Sync adjusted book to Supabase
-    if (supabase) {
-      try {
-        const { error } = await supabase
-          .from('books')
-          .update({
-            stock_quantity: stockAfter,
-            sales_count: book.sales_count,
-            updated_at: book.updated_at,
-          })
-          .eq('id', book.id);
-        if (error && isTableMissingError(error)) {
-          setSupabaseStatus('tables_missing');
-        }
-      } catch (err) {
-        console.warn('Supabase postal sale sync error:', err);
-      }
+    // Persist to Cloud SQL PostgreSQL
+    try {
+      await fetch(`/api/books/${params.bookId}/postal-sale`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+    } catch (err) {
+      console.warn('Cloud sync error during postal sale:', err);
     }
 
     return { book, transaction };
@@ -589,10 +397,10 @@ export const storageService = {
   getTransactions(): StockTransaction[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-      if (!data) {
-        return [];
-      }
-      return JSON.parse(data);
+      if (!data) return [];
+      const parsed = JSON.parse(data);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(parseTransaction);
     } catch {
       return [];
     }
@@ -603,12 +411,10 @@ export const storageService = {
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
     window.dispatchEvent(new Event('mcu_transactions_updated'));
 
-    if (supabase) {
-      try {
-        await supabase.from('transactions').delete().eq('id', id);
-      } catch (e) {
-        console.warn('Error deleting transaction from Supabase:', e);
-      }
+    try {
+      await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+    } catch (e) {
+      console.warn('Cloud delete transaction notice:', e);
     }
   },
 
@@ -616,12 +422,10 @@ export const storageService = {
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify([]));
     window.dispatchEvent(new Event('mcu_transactions_updated'));
 
-    if (supabase) {
-      try {
-        await supabase.from('transactions').delete().neq('id', '_none_');
-      } catch (e) {
-        console.warn('Error clearing transactions from Supabase:', e);
-      }
+    try {
+      await fetch('/api/transactions', { method: 'DELETE' });
+    } catch (e) {
+      console.warn('Cloud clear transactions notice:', e);
     }
   },
 
@@ -636,20 +440,12 @@ export const storageService = {
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
     window.dispatchEvent(new Event('mcu_transactions_updated'));
 
-    // Sync transaction to Supabase
-    if (supabase) {
-      supabase
-        .from('transactions')
-        .insert(newTx)
-        .then(
-          ({ error }) => {
-            if (error && isTableMissingError(error)) {
-              setSupabaseStatus('tables_missing');
-            }
-          },
-          () => {}
-        );
-    }
+    // Persist to Cloud SQL PostgreSQL
+    fetch('/api/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTx),
+    }).catch(() => {});
 
     return newTx;
   },
@@ -663,28 +459,7 @@ export const storageService = {
         return INITIAL_USERS;
       }
       const parsed: User[] = JSON.parse(data);
-      let modified = false;
-      const updated = parsed.map((u) => {
-        let userCopy = { ...u };
-        if (userCopy.avatar) {
-          delete userCopy.avatar;
-          modified = true;
-        }
-        if (userCopy.id === 'user-1' && userCopy.name !== 'พระมหาคณัย สุมน, ดร.') {
-          modified = true;
-          userCopy.name = 'พระมหาคณัย สุมน, ดร.';
-        }
-        if (userCopy.id === 'user-2' && (userCopy.role as string) === 'Staff') {
-          modified = true;
-          userCopy.role = 'Manager';
-          userCopy.department = 'หัวหน้าฝ่ายคลังและพัสดุสิ่งพิมพ์';
-        }
-        return userCopy;
-      });
-      if (modified) {
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updated));
-      }
-      return updated;
+      return parsed;
     } catch {
       return INITIAL_USERS;
     }
@@ -721,16 +496,7 @@ export const storageService = {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
       if (!data) return null;
-      const parsed: User = JSON.parse(data);
-      if (parsed.avatar) {
-        delete parsed.avatar;
-        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(parsed));
-      }
-      if (parsed.id === 'user-1' && parsed.name !== 'พระมหาคณัย สุมน, ดร.') {
-        parsed.name = 'พระมหาคณัย สุมน, ดร.';
-        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(parsed));
-      }
-      return parsed;
+      return JSON.parse(data);
     } catch {
       return null;
     }
@@ -813,158 +579,81 @@ export const storageService = {
     window.dispatchEvent(new Event('mcu_transactions_updated'));
     window.dispatchEvent(new Event('mcu_users_updated'));
 
-    if (supabase) {
-      try {
-        await supabase.from('books').upsert(INITIAL_BOOKS);
-      } catch (e) {
-        console.warn('Failed to seed Supabase books defaults:', e);
-      }
+    try {
+      await fetch('/api/reset-defaults', { method: 'POST' });
+    } catch (e) {
+      console.warn('Network sync notice during reset:', e);
     }
   },
 };
 
-let isSupabaseSyncActive = false;
-
 /**
- * Initializes bidirectional real-time synchronization with Supabase (PostgreSQL).
- * Auto-syncs remote books and transactions, with smooth LocalStorage fallback.
+ * Real-time bidirectional synchronization with Cloud SQL PostgreSQL backend.
+ * Synchronizes books and transactions across all devices and sessions.
  */
-export function initializeSupabaseSync(): () => void {
-  if (isSupabaseSyncActive) return () => {};
-  isSupabaseSyncActive = true;
+export function initializeCloudSync(): () => void {
+  let isCancelled = false;
 
-  if (!supabase) {
-    setSupabaseStatus('fallback_local');
-    return () => {
-      isSupabaseSyncActive = false;
-    };
-  }
-
-  setSupabaseStatus('connecting');
-
-  // 1. Initial Fetch from Supabase
-  const syncRemoteBooks = async () => {
+  const syncBooksFromCloud = async () => {
     try {
-      const { data, error } = await supabase!
-        .from('books')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        if (isTableMissingError(error)) {
-          setSupabaseStatus('tables_missing');
-        } else {
-          console.warn('Supabase books query failed, continuing with local data:', error.message);
-          setSupabaseStatus('fallback_local');
+      const res = await fetch('/api/books');
+      if (res.ok && !isCancelled) {
+        const remoteBooks: any[] = await res.json();
+        if (Array.isArray(remoteBooks)) {
+          const parsed = remoteBooks.map(parseBook);
+          localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(parsed));
+          window.dispatchEvent(new Event('mcu_books_updated'));
         }
-        return;
       }
-
-      setSupabaseStatus('connected');
-
-      if (data) {
-        localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(data));
-        window.dispatchEvent(new Event('mcu_books_updated'));
-      }
-    } catch (e) {
-      console.warn('Network error reaching Supabase, using local fallback:', e);
-      setSupabaseStatus('fallback_local');
+    } catch {
+      // Offline / network fallback
     }
   };
 
-  const syncRemoteTransactions = async () => {
+  const syncTransactionsFromCloud = async () => {
     try {
-      const { data, error } = await supabase!
-        .from('transactions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        if (isTableMissingError(error)) {
-          setSupabaseStatus('tables_missing');
+      const res = await fetch('/api/transactions');
+      if (res.ok && !isCancelled) {
+        const remoteTxs: any[] = await res.json();
+        if (Array.isArray(remoteTxs)) {
+          const parsed = remoteTxs.map(parseTransaction);
+          localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(parsed));
+          window.dispatchEvent(new Event('mcu_transactions_updated'));
         }
-        return;
       }
-
-      if (data) {
-        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(data));
-        window.dispatchEvent(new Event('mcu_transactions_updated'));
-      }
-    } catch (e) {
-      console.warn('Error fetching Supabase transactions:', e);
+    } catch {
+      // Offline / network fallback
     }
   };
 
-  syncRemoteBooks();
-  syncRemoteTransactions();
+  // Immediate fetch
+  syncBooksFromCloud();
+  syncTransactionsFromCloud();
 
-  // 2. Real-time Subscription via Supabase Realtime Channels
-  let channel: any = null;
-  try {
-    channel = supabase
-      .channel('mcu-press-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'books' },
-        (payload) => {
-          const currentBooks = storageService.getBooks();
-          if (payload.eventType === 'INSERT') {
-            const newBook = payload.new as Book;
-            const exists = currentBooks.some((b) => b.id === newBook.id);
-            if (!exists) {
-              storageService.saveBooks([newBook, ...currentBooks]);
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updated = payload.new as Book;
-            const next = currentBooks.map((b) => (b.id === updated.id ? updated : b));
-            storageService.saveBooks(next);
-          } else if (payload.eventType === 'DELETE') {
-            const oldId = (payload.old as any)?.id;
-            if (oldId) {
-              const current = storageService.getBooks();
-              const next = current.filter((b) => b.id !== oldId);
-              storageService.saveBooks(next);
-            }
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'transactions' },
-        (payload) => {
-          const currentTxs = storageService.getTransactions();
-          if (payload.eventType === 'INSERT') {
-            const newTx = payload.new as StockTransaction;
-            const exists = currentTxs.some((t) => t.id === newTx.id);
-            if (!exists) {
-              const updated = [newTx, ...currentTxs];
-              localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
-              window.dispatchEvent(new Event('mcu_transactions_updated'));
-            }
-          } else if (payload.eventType === 'DELETE') {
-            const oldId = (payload.old as any)?.id;
-            if (oldId) {
-              const current = storageService.getTransactions();
-              const updated = current.filter((t) => t.id !== oldId);
-              localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
-              window.dispatchEvent(new Event('mcu_transactions_updated'));
-            }
-          }
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setSupabaseStatus('connected');
-        }
-      });
-  } catch (err) {
-    console.warn('Failed to subscribe to Supabase Realtime:', err);
-  }
+  // Periodic polling every 5 seconds to sync data created/edited on other devices or tabs
+  const timer = setInterval(() => {
+    if (!document.hidden && !isCancelled) {
+      syncBooksFromCloud();
+      syncTransactionsFromCloud();
+    }
+  }, 5000);
+
+  // Focus event for instant sync when returning to tab
+  const onFocus = () => {
+    if (!isCancelled) {
+      syncBooksFromCloud();
+      syncTransactionsFromCloud();
+    }
+  };
+
+  window.addEventListener('focus', onFocus);
 
   return () => {
-    isSupabaseSyncActive = false;
-    if (channel && supabase) {
-      supabase.removeChannel(channel);
-    }
+    isCancelled = true;
+    clearInterval(timer);
+    window.removeEventListener('focus', onFocus);
   };
 }
+
+// Backwards-compatible alias for existing imports
+export const initializeSupabaseSync = initializeCloudSync;

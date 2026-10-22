@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { storageService, initializeSupabaseSync } from './services/storage';
+import { storageService, initializeCloudSync } from './services/storage';
 import { Book, StockTransaction, User } from './types';
 import { Header } from './components/Header';
 import { Sidebar, NavTab } from './components/Sidebar';
@@ -62,8 +62,8 @@ const MainApplication: React.FC = () => {
   useEffect(() => {
     reloadData();
 
-    // Start cloud real-time bidirectional synchronization with Supabase PostgreSQL
-    const unsubscribeSupabase = initializeSupabaseSync();
+    // Start cloud real-time bidirectional synchronization with PostgreSQL backend
+    const unsubscribeSync = initializeCloudSync();
 
     const handleDataChange = () => {
       reloadData();
@@ -73,7 +73,7 @@ const MainApplication: React.FC = () => {
     window.addEventListener('mcu_transactions_updated', handleDataChange);
 
     return () => {
-      unsubscribeSupabase();
+      unsubscribeSync();
       window.removeEventListener('mcu_books_updated', handleDataChange);
       window.removeEventListener('mcu_transactions_updated', handleDataChange);
     };
