@@ -34,7 +34,7 @@ export interface Book {
   sales_count?: number;
 }
 
-export type TransactionType = 'in' | 'increase' | 'decrease';
+export type TransactionType = 'in' | 'increase' | 'decrease' | 'damage';
 
 export interface StockTransaction {
   id: string;
@@ -47,6 +47,11 @@ export interface StockTransaction {
   created_at: string;
   created_by: string;
   note: string;
+  tracking_number?: string;
+  price?: number;
+  total_price?: number;
+  customer_name?: string;
+  sale_channel?: 'postal' | 'direct' | 'general';
 }
 
 export interface SummaryStats {

@@ -1,4 +1,4 @@
-import { Book, StockTransaction, User, StockStatus, SummaryStats } from '../types';
+import { Book, StockTransaction, User, StockStatus, SummaryStats, TransactionType } from '../types';
 import { supabase, setSupabaseStatus, isTableMissingError } from './supabase';
 
 const STORAGE_KEYS = {
@@ -430,10 +430,10 @@ export const storageService = {
     return true;
   },
 
-  // Stock Adjustment
+  // Stock Adjustment (รับเข้า / ขาย / ชำรุด)
   async adjustStock(
     bookId: string,
-    type: 'in' | 'increase' | 'decrease',
+    type: TransactionType,
     quantity: number,
     operatorName: string,
     note: string
@@ -450,14 +450,26 @@ export const storageService = {
       stockAfter = stockBefore + quantity;
     } else if (type === 'decrease') {
       stockAfter = Math.max(0, stockBefore - quantity);
-      // Increment sales_count on stock decrease/distribution
+      // Increment sales_count on stock decrease / sales
       book.sales_count = (book.sales_count || 0) + quantity;
+    } else if (type === 'damage') {
+      stockAfter = Math.max(0, stockBefore - quantity);
+      // Damaged items deducted from stock without incrementing sales
     }
 
     book.stock_quantity = stockAfter;
     book.updated_at = new Date().toISOString();
     books[index] = book;
     this.saveBooks(books);
+
+    const defaultNote =
+      type === 'in'
+        ? 'รับเข้าสต๊อก'
+        : type === 'increase'
+        ? 'ปรับเพิ่มสต๊อก'
+        : type === 'damage'
+        ? 'หนังสือชำรุด / คัดออก'
+        : 'จำหน่าย / ขายสต๊อก';
 
     const transaction = this.addTransaction({
       book_id: book.id,
@@ -467,7 +479,7 @@ export const storageService = {
       stock_before: stockBefore,
       stock_after: stockAfter,
       created_by: operatorName,
-      note: note || (type === 'in' ? 'รับเข้าสต๊อก' : type === 'increase' ? 'ปรับเพิ่มสต๊อก' : 'ปรับลดสต๊อก'),
+      note: note || defaultNote,
     });
 
     // Sync adjusted book to Supabase
@@ -485,6 +497,88 @@ export const storageService = {
         }
       } catch (err) {
         console.warn('Supabase stock adjustment sync error:', err);
+      }
+    }
+
+    return { book, transaction };
+  },
+
+  // Record Postal Book Sale (การขายหนังสือแบบส่งไปรษณีย์)
+  async recordPostalSale(params: {
+    bookId: string;
+    quantity: number;
+    price: number;
+    trackingNumber: string;
+    operatorName: string;
+    customerName?: string;
+    note?: string;
+  }): Promise<{ book: Book; transaction: StockTransaction } | null> {
+    const books = this.getBooks();
+    const index = books.findIndex((b) => b.id === params.bookId);
+    if (index === -1) return null;
+
+    const book = books[index];
+    const stockBefore = book.stock_quantity;
+    const qty = Math.max(1, params.quantity);
+
+    if (qty > stockBefore) {
+      throw new Error(`สต๊อกคงเหลือไม่พอ (${stockBefore} เล่ม) สำหรับการขายจำนวน ${qty} เล่ม`);
+    }
+
+    const stockAfter = Math.max(0, stockBefore - qty);
+    book.stock_quantity = stockAfter;
+    book.sales_count = (book.sales_count || 0) + qty;
+    book.updated_at = new Date().toISOString();
+    books[index] = book;
+    this.saveBooks(books);
+
+    const trackingTrimmed = params.trackingNumber.trim();
+    const customerTrimmed = params.customerName?.trim() || '';
+    const noteTrimmed = params.note?.trim() || '';
+    const unitPrice = Number(params.price) || 0;
+    const totalPrice = unitPrice * qty;
+
+    const formattedNote = [
+      `📮 ส่งไปรษณีย์ เลขพัสดุ: ${trackingTrimmed}`,
+      `ราคา ฿${unitPrice.toLocaleString('th-TH')} × ${qty} เล่ม = ฿${totalPrice.toLocaleString('th-TH')}`,
+      customerTrimmed ? `ผู้รับ: ${customerTrimmed}` : '',
+      noteTrimmed,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+
+    const transaction = this.addTransaction({
+      book_id: book.id,
+      book_name: book.book_name,
+      transaction_type: 'decrease',
+      quantity: qty,
+      stock_before: stockBefore,
+      stock_after: stockAfter,
+      created_by: params.operatorName,
+      note: formattedNote,
+      tracking_number: trackingTrimmed,
+      price: unitPrice,
+      total_price: totalPrice,
+      customer_name: customerTrimmed,
+      sale_channel: 'postal',
+    });
+
+    // Sync adjusted book to Supabase
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('books')
+          .update({
+            stock_quantity: stockAfter,
+            sales_count: book.sales_count,
+            updated_at: book.updated_at,
+          })
+          .eq('id', book.id);
+        if (error && isTableMissingError(error)) {
+          setSupabaseStatus('tables_missing');
+        }
+      } catch (err) {
+        console.warn('Supabase postal sale sync error:', err);
       }
     }
 

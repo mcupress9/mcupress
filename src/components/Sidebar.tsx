@@ -25,13 +25,21 @@ interface SidebarProps {
   onCloseMobile: () => void;
 }
 
+interface NavItem {
+  id: NavTab;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+  badge?: string;
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
   onSelectTab,
   isOpenMobile,
   onCloseMobile,
 }) => {
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       id: 'dashboard' as NavTab,
       label: 'หน้าหลัก',
@@ -147,10 +155,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Icon className="w-4.5 h-4.5" />
               </div>
 
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 flex items-center justify-between">
                 <div className="leading-tight truncate font-medium">
                   {item.label}
                 </div>
+                {item.badge && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold transition-all ${
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[#FCE7F3] text-[#ED1760]'
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
               </div>
             </button>
           );

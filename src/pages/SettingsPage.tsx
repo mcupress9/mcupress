@@ -281,7 +281,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onDataReset }) => {
               จำนวนคงเหลือ 0 เล่ม
             </div>
             <div className="text-[11px] text-rose-700 mt-1">
-              ระงับการเบิกจ่ายและเสนอขออนุมัติพิมพ์ใหม่
+              ระงับการขาย/จำหน่าย และเสนอขออนุมัติพิมพ์ใหม่
             </div>
           </div>
         </div>

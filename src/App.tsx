@@ -208,7 +208,10 @@ const MainApplication: React.FC = () => {
                   stats={stats}
                   onNavigateToBooks={() => setCurrentTab('books')}
                   onNavigateToAddBook={() => setCurrentTab('add-book')}
-                  onNavigateToStock={() => setCurrentTab('stock')}
+                  onNavigateToStock={() => {
+                    setStockPreselectedId(null);
+                    setCurrentTab('stock');
+                  }}
                   onSelectBook={handleSelectBook}
                 />
               )}

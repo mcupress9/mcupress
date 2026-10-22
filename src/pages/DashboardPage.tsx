@@ -22,6 +22,7 @@ import {
   Sparkles,
   TrendingUp,
   Award,
+  Truck,
 } from 'lucide-react';
 import { Book, SummaryStats } from '../types';
 import { StockBadge } from '../components/StockBadge';
@@ -149,12 +150,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       <div className="relative overflow-hidden bg-gradient-to-r from-[#FCE7F3] via-[#FFF1F7] to-[#FCF8FA] p-3 sm:p-8 rounded-xl sm:rounded-[24px] border border-[#F3DDE7] shadow-[0_4px_20px_rgba(237,23,96,0.04)]">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-6">
           <div className="space-y-1 sm:space-y-2">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="text-sm sm:text-2xl font-bold text-[#111827]">สวัสดี 👋</span>
-              <span className="inline-flex items-center px-1.5 sm:px-3 py-0.2 sm:py-0.5 rounded-full text-[9px] sm:text-xs font-bold bg-white text-[#ED1760] border border-[#F3DDE7] shadow-2xs">
-                MCU Press Inventory
-              </span>
-            </div>
             <h2 className="text-base sm:text-3xl font-extrabold text-[#111827] tracking-tight leading-snug">
               ภาพรวมสต๊อกหนังสือของสำนักพิมพ์
             </h2>
