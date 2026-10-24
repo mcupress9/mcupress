@@ -60,6 +60,9 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
         return next;
       });
     }
+    if (errorMessages.length > 0) {
+      setErrorMessages([]);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,6 +71,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
       const reader = new FileReader();
       reader.onload = (event) => {
         setCoverImage(event.target?.result as string);
+        setErrorMessages([]);
       };
       reader.readAsDataURL(file);
     }
@@ -456,14 +460,25 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
 
           {/* Error Summary Banner if needed */}
           {hasErrors && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs">
-              <div className="flex items-center gap-1.5 font-bold text-red-700 mb-1">
-                <AlertCircle className="w-4 h-4" />
-                <span>ยังมีข้อมูลที่ไม่ถูกต้อง กรุณาตรวจสอบ:</span>
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs space-y-1.5 animate-in fade-in">
+              <div className="flex items-center gap-2 font-bold text-red-700">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>
+                  {Object.keys(fieldErrors).length > 0
+                    ? 'ยังมีข้อมูลที่ไม่ถูกต้อง กรุณาตรวจสอบ:'
+                    : 'ข้อความแจ้งเตือนจากระบบ:'}
+                </span>
               </div>
-              <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+              <ul className="list-disc list-inside space-y-1 text-xs pl-1">
                 {Object.values(fieldErrors).map((msg, i) => (
-                  <li key={i}>{msg}</li>
+                  <li key={`field-${i}`} className="text-red-700 font-medium">
+                    {msg}
+                  </li>
+                ))}
+                {errorMessages.map((msg, i) => (
+                  <li key={`server-${i}`} className="text-red-700 font-medium">
+                    {msg}
+                  </li>
                 ))}
               </ul>
             </div>

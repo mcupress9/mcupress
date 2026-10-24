@@ -116,10 +116,31 @@ app.put('/api/books/:id', optionalAuth, async (req: AuthRequest, res) => {
     if (updates.sales_count !== undefined) updates.sales_count = Number(updates.sales_count);
     if (updates.is_bestseller !== undefined) updates.is_bestseller = Boolean(updates.is_bestseller);
 
-    const updaterName = req.body.updaterName || req.user?.email || 'เจ้าหน้าที่';
-    const updated = await updateBook(req.params.id, updates, updaterName);
+    const updaterName = req.body.updaterName || req.user?.email || 'เจ้าหน้าที่สำนักพิมพ์';
+    let updated = await updateBook(req.params.id, updates, updaterName);
     if (!updated) {
-      return res.status(404).json({ error: 'Book not found' });
+      // Auto-upsert into database if this book was previously created in local cache
+      const defaultCover =
+        'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
+      const newBook = {
+        id: req.params.id,
+        book_name: (updates.book_name || 'หนังสือไม่มีชื่อ').trim(),
+        author: (updates.author || 'ไม่ระบุผู้แต่ง').trim(),
+        pages: Number(updates.pages) || 0,
+        isbn: (updates.isbn || '').trim(),
+        published_year: Number(updates.published_year) || 2567,
+        price: (updates.price ?? '0').toString(),
+        cover_image: (updates.cover_image && updates.cover_image.trim()) ? updates.cover_image.trim() : defaultCover,
+        stock_quantity: Number(updates.stock_quantity) || 0,
+        category: updates.category || 'พระไตรปิฎกและคัมภีร์ศึกษา',
+        description: (updates.description || '').trim(),
+        is_bestseller: Boolean(updates.is_bestseller),
+        sales_count: Number(updates.sales_count) || 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        created_by: updaterName || 'เจ้าหน้าที่สำนักพิมพ์',
+      };
+      updated = await createBook(newBook);
     }
     res.json(updated);
   } catch (error: any) {
