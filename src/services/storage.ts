@@ -300,10 +300,30 @@ export const storageService = {
     operatorName: string,
     note: string
   ): Promise<{ book: Book; transaction: StockTransaction } | null> {
+    const localBook = this.getBooks().find((b) => b.id === bookId);
+
     const res = await fetch(`/api/books/${bookId}/adjust-stock`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, quantity, operatorName, note }),
+      body: JSON.stringify({
+        type,
+        quantity,
+        operatorName,
+        note,
+        bookFallback: localBook
+          ? {
+              book_name: localBook.book_name,
+              author: localBook.author,
+              pages: localBook.pages,
+              isbn: localBook.isbn,
+              published_year: localBook.published_year,
+              price: localBook.price,
+              cover_image: localBook.cover_image,
+              category: localBook.category,
+              description: localBook.description,
+            }
+          : undefined,
+      }),
     });
 
     if (!res.ok) {
@@ -320,8 +340,10 @@ export const storageService = {
     const idx = books.findIndex((b) => b.id === bookId);
     if (idx !== -1) {
       books[idx] = book;
-      this.saveBooks(books);
+    } else {
+      books.unshift(book);
     }
+    this.saveBooks(books);
 
     const txs = this.getTransactions().filter((t) => t.id !== transaction.id);
     txs.unshift(transaction);
@@ -343,10 +365,27 @@ export const storageService = {
     customerName?: string;
     note?: string;
   }): Promise<{ book: Book; transaction: StockTransaction } | null> {
+    const localBook = this.getBooks().find((b) => b.id === params.bookId);
+
     const res = await fetch(`/api/books/${params.bookId}/postal-sale`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({
+        ...params,
+        bookFallback: localBook
+          ? {
+              book_name: localBook.book_name,
+              author: localBook.author,
+              pages: localBook.pages,
+              isbn: localBook.isbn,
+              published_year: localBook.published_year,
+              price: localBook.price,
+              cover_image: localBook.cover_image,
+              category: localBook.category,
+              description: localBook.description,
+            }
+          : undefined,
+      }),
     });
 
     if (!res.ok) {
@@ -363,8 +402,10 @@ export const storageService = {
     const idx = books.findIndex((b) => b.id === params.bookId);
     if (idx !== -1) {
       books[idx] = book;
-      this.saveBooks(books);
+    } else {
+      books.unshift(book);
     }
+    this.saveBooks(books);
 
     const txs = this.getTransactions().filter((t) => t.id !== transaction.id);
     txs.unshift(transaction);

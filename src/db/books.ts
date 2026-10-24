@@ -117,15 +117,43 @@ export async function adjustStock(params: {
   quantity: number;
   operatorName: string;
   note?: string;
+  bookFallback?: Partial<typeof books.$inferInsert>;
 }) {
   try {
     return await withDbRetry(async () => {
       const existing = await db.select().from(books).where(eq(books.id, params.bookId));
+      let book: typeof books.$inferSelect;
+
       if (!existing.length) {
-        throw new Error('ไม่พบหนังสือที่ระบุในระบบ');
+        const defaultCover =
+          'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
+        const fb = params.bookFallback || {};
+        const created = await db
+          .insert(books)
+          .values({
+            id: params.bookId,
+            book_name: (fb.book_name || 'หนังสือวิชาการ มจร').trim(),
+            author: (fb.author || 'สำนักพิมพ์ มจร').trim(),
+            pages: Number(fb.pages) || 100,
+            isbn: (fb.isbn || '').trim(),
+            published_year: Number(fb.published_year) || 2567,
+            price: (fb.price ?? '100').toString(),
+            cover_image: (fb.cover_image && fb.cover_image.trim()) ? fb.cover_image.trim() : defaultCover,
+            stock_quantity: 0,
+            category: fb.category || 'พระไตรปิฎกและคัมภีร์ศึกษา',
+            description: (fb.description || '').trim(),
+            is_bestseller: Boolean(fb.is_bestseller),
+            sales_count: Number(fb.sales_count) || 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            created_by: params.operatorName || 'เจ้าหน้าที่สำนักพิมพ์',
+          })
+          .returning();
+        book = created[0];
+      } else {
+        book = existing[0];
       }
 
-      const book = existing[0];
       const stockBefore = book.stock_quantity;
       let stockAfter = stockBefore;
       let salesCount = book.sales_count || 0;
@@ -167,7 +195,7 @@ export async function adjustStock(params: {
         stock_before: stockBefore,
         stock_after: stockAfter,
         created_at: new Date().toISOString(),
-        created_by: params.operatorName || 'เจ้าหน้าที่',
+        created_by: params.operatorName || 'เจ้าหน้าที่สำนักพิมพ์',
         note: params.note || defaultNote,
       };
 
@@ -192,15 +220,43 @@ export async function postalSale(params: {
   operatorName: string;
   customerName?: string;
   note?: string;
+  bookFallback?: Partial<typeof books.$inferInsert>;
 }) {
   try {
     return await withDbRetry(async () => {
       const existing = await db.select().from(books).where(eq(books.id, params.bookId));
+      let book: typeof books.$inferSelect;
+
       if (!existing.length) {
-        throw new Error('ไม่พบหนังสือที่ระบุในระบบ');
+        const defaultCover =
+          'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
+        const fb = params.bookFallback || {};
+        const created = await db
+          .insert(books)
+          .values({
+            id: params.bookId,
+            book_name: (fb.book_name || 'หนังสือวิชาการ มจร').trim(),
+            author: (fb.author || 'สำนักพิมพ์ มจร').trim(),
+            pages: Number(fb.pages) || 100,
+            isbn: (fb.isbn || '').trim(),
+            published_year: Number(fb.published_year) || 2567,
+            price: (fb.price ?? (params.price || '100')).toString(),
+            cover_image: (fb.cover_image && fb.cover_image.trim()) ? fb.cover_image.trim() : defaultCover,
+            stock_quantity: params.quantity,
+            category: fb.category || 'พระไตรปิฎกและคัมภีร์ศึกษา',
+            description: (fb.description || '').trim(),
+            is_bestseller: Boolean(fb.is_bestseller),
+            sales_count: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            created_by: params.operatorName || 'เจ้าหน้าที่สำนักพิมพ์',
+          })
+          .returning();
+        book = created[0];
+      } else {
+        book = existing[0];
       }
 
-      const book = existing[0];
       const stockBefore = book.stock_quantity;
       const qty = Math.max(1, params.quantity);
 

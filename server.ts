@@ -165,13 +165,14 @@ app.delete('/api/books/:id', optionalAuth, async (req, res) => {
 // 3. Stock Adjustment (รับเข้า / ปรับเพิ่ม / ขาย / ชำรุด)
 app.post('/api/books/:id/adjust-stock', optionalAuth, async (req: AuthRequest, res) => {
   try {
-    const { type, quantity, operatorName, note } = req.body;
+    const { type, quantity, operatorName, note, bookFallback } = req.body;
     const result = await adjustStock({
       bookId: req.params.id,
       type: type || 'in',
       quantity: Number(quantity) || 1,
-      operatorName: operatorName || req.user?.email || 'เจ้าหน้าที่',
+      operatorName: operatorName || req.user?.email || 'เจ้าหน้าที่สำนักพิมพ์',
       note,
+      bookFallback,
     });
     res.json(result);
   } catch (error: any) {
@@ -183,15 +184,16 @@ app.post('/api/books/:id/adjust-stock', optionalAuth, async (req: AuthRequest, r
 // 4. Postal Sale
 app.post('/api/books/:id/postal-sale', optionalAuth, async (req: AuthRequest, res) => {
   try {
-    const { quantity, price, trackingNumber, operatorName, customerName, note } = req.body;
+    const { quantity, price, trackingNumber, operatorName, customerName, note, bookFallback } = req.body;
     const result = await postalSale({
       bookId: req.params.id,
       quantity: Number(quantity) || 1,
       price: Number(price) || 0,
       trackingNumber: trackingNumber || '',
-      operatorName: operatorName || req.user?.email || 'เจ้าหน้าที่',
+      operatorName: operatorName || req.user?.email || 'เจ้าหน้าที่สำนักพิมพ์',
       customerName,
       note,
+      bookFallback,
     });
     res.json(result);
   } catch (error: any) {
