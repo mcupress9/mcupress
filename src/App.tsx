@@ -60,7 +60,16 @@ const MainApplication: React.FC = () => {
 
   // Initial load, real-time sync & storage event listener
   useEffect(() => {
+    // Load local cache first for instant UI response
     reloadData();
+
+    // Immediately fetch freshest data from Cloud SQL backend
+    storageService.fetchBooksFromApi().then((freshBooks) => {
+      setBooks(freshBooks);
+    });
+    storageService.fetchTransactionsFromApi().then((freshTxs) => {
+      setTransactions(freshTxs);
+    });
 
     // Start cloud real-time bidirectional synchronization with PostgreSQL backend
     const unsubscribeSync = initializeCloudSync();

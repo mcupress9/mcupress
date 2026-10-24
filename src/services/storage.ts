@@ -9,6 +9,23 @@ const STORAGE_KEYS = {
   ADD_BOOK_DRAFT: 'mcu_press_add_book_draft_v2',
 };
 
+// Cross-tab and cross-window real-time synchronization channel
+const syncChannel =
+  typeof window !== 'undefined' && 'BroadcastChannel' in window
+    ? new BroadcastChannel('mcu_press_cross_tab_sync')
+    : null;
+
+function notifyDataUpdated(type: 'books' | 'transactions' | 'users') {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(`mcu_${type}_updated`));
+    try {
+      syncChannel?.postMessage({ type, timestamp: Date.now() });
+    } catch {
+      // Ignore broadcast errors
+    }
+  }
+}
+
 export const INITIAL_USERS: User[] = [
   {
     id: 'user-1',
@@ -43,7 +60,6 @@ export const INITIAL_USERS: User[] = [
 ];
 
 export const INITIAL_BOOKS: Book[] = [];
-
 export const INITIAL_TRANSACTIONS: StockTransaction[] = [];
 
 export function getStockStatus(quantity: number): StockStatus {
@@ -70,11 +86,11 @@ function parseBook(b: any): Book {
     price: Number(b.price) || 0,
     cover_image: b.cover_image || '',
     stock_quantity: Number(b.stock_quantity) || 0,
-    created_at: b.created_at,
-    updated_at: b.updated_at,
+    created_at: b.created_at || new Date().toISOString(),
+    updated_at: b.updated_at || new Date().toISOString(),
     created_by: b.created_by || '',
-    category: b.category,
-    description: b.description,
+    category: b.category || 'พระไตรปิฎกและคัมภีร์ศึกษา',
+    description: b.description || '',
     is_bestseller: Boolean(b.is_bestseller),
     sales_count: Number(b.sales_count) || 0,
   };
@@ -89,7 +105,7 @@ function parseTransaction(t: any): StockTransaction {
     quantity: Number(t.quantity) || 0,
     stock_before: Number(t.stock_before) || 0,
     stock_after: Number(t.stock_after) || 0,
-    created_at: t.created_at,
+    created_at: t.created_at || new Date().toISOString(),
     created_by: t.created_by || '',
     note: t.note || '',
     tracking_number: t.tracking_number,
@@ -102,14 +118,11 @@ function parseTransaction(t: any): StockTransaction {
 
 // Storage helpers with Cloud SQL PostgreSQL Persistence and LocalStorage cache
 export const storageService = {
-  // Books
+  // Books - Local Cache
   getBooks(): Book[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.BOOKS);
-      if (data === null) {
-        localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(INITIAL_BOOKS));
-        return INITIAL_BOOKS;
-      }
+      if (!data) return [];
       const parsed: any[] = JSON.parse(data);
       if (!Array.isArray(parsed)) return [];
       return parsed.map(parseBook);
@@ -119,67 +132,99 @@ export const storageService = {
   },
 
   saveBooks(books: Book[]): void {
-    localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(books));
-    window.dispatchEvent(new Event('mcu_books_updated'));
+    try {
+      localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(books));
+    } catch {
+      // Ignore quota error
+    }
+    notifyDataUpdated('books');
+  },
+
+  // Direct Fetch from Cloud SQL Backend (used on load & polling)
+  async fetchBooksFromApi(): Promise<Book[]> {
+    try {
+      const res = await fetch('/api/books');
+      if (res.ok) {
+        const remoteBooks: any[] = await res.json();
+        if (Array.isArray(remoteBooks)) {
+          const parsed = remoteBooks.map(parseBook);
+          localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(parsed));
+          notifyDataUpdated('books');
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Network fetch error for books, using cache:', e);
+    }
+    return this.getBooks();
+  },
+
+  async fetchTransactionsFromApi(): Promise<StockTransaction[]> {
+    try {
+      const res = await fetch('/api/transactions');
+      if (res.ok) {
+        const remoteTxs: any[] = await res.json();
+        if (Array.isArray(remoteTxs)) {
+          const parsed = remoteTxs.map(parseTransaction);
+          localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(parsed));
+          notifyDataUpdated('transactions');
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Network fetch error for transactions, using cache:', e);
+    }
+    return this.getTransactions();
   },
 
   async clearAllBooks(): Promise<void> {
-    localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify([]));
-    window.dispatchEvent(new Event('mcu_books_updated'));
-    window.dispatchEvent(new Event('mcu_transactions_updated'));
-
     try {
       await fetch('/api/reset-defaults', { method: 'POST' });
     } catch (e) {
-      console.warn('Network sync notice:', e);
+      console.warn('Network reset error:', e);
     }
+
+    localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify([]));
+    notifyDataUpdated('books');
+    notifyDataUpdated('transactions');
   },
 
+  // Add Book: Directly stores to Cloud SQL first, ensuring remote persistence
   async addBook(
     bookData: Omit<Book, 'id' | 'created_at' | 'updated_at'>,
     creatorName: string
   ): Promise<Book> {
-    const books = this.getBooks();
-    const newBook: Book = {
+    const payload = {
       ...bookData,
-      id: 'mcu-b' + Date.now().toString(36),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
       created_by: creatorName,
     };
+
+    // 1. Persist directly to Cloud SQL PostgreSQL backend
+    const res = await fetch('/api/books', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'ไม่สามารถบันทึกข้อมูลหนังสือลงฐานข้อมูลกลางได้');
+    }
+
+    const remoteCreated = await res.json();
+    const newBook = parseBook(remoteCreated);
+
+    // 2. Update local storage with real persisted record
+    const books = this.getBooks().filter((b) => b.id !== newBook.id);
     books.unshift(newBook);
     this.saveBooks(books);
 
-    // Initial stock transaction if stock > 0
-    if (newBook.stock_quantity > 0) {
-      this.addTransaction({
-        book_id: newBook.id,
-        book_name: newBook.book_name,
-        transaction_type: 'in',
-        quantity: newBook.stock_quantity,
-        stock_before: 0,
-        stock_after: newBook.stock_quantity,
-        created_by: creatorName,
-        note: 'บันทึกสต๊อกแรกเริ่มจากการเพิ่มหนังสือใหม่',
-      });
-    }
+    // 3. Sync transactions from backend (initial stock transaction was created by backend)
+    await this.fetchTransactionsFromApi().catch(() => {});
 
-    // Persist to Cloud SQL PostgreSQL database
-    try {
-      const res = await fetch('/api/books', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newBook),
-      });
-      if (res.ok) {
-        const remoteCreated = await res.json();
-        const updatedList = this.getBooks().map((b) => (b.id === newBook.id ? parseBook(remoteCreated) : b));
-        this.saveBooks(updatedList);
-      }
-    } catch (err) {
-      console.warn('Cloud sync error (saved locally):', err);
-    }
+    notifyDataUpdated('books');
+    notifyDataUpdated('transactions');
 
     return newBook;
   },
@@ -189,68 +234,60 @@ export const storageService = {
     updates: Partial<Book>,
     updaterName: string
   ): Promise<Book | null> {
+    // 1. Send update to Cloud SQL backend
+    const res = await fetch(`/api/books/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...updates, updaterName }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'ไม่สามารถบันทึกการแก้ไขลงฐานข้อมูลกลางได้');
+    }
+
+    const updatedRemote = await res.json();
+    const updatedBook = parseBook(updatedRemote);
+
+    // 2. Update local cache
     const books = this.getBooks();
     const index = books.findIndex((b) => b.id === id);
-    if (index === -1) return null;
-
-    const oldBook = books[index];
-    const oldStock = oldBook.stock_quantity;
-    const updatedBook: Book = {
-      ...oldBook,
-      ...updates,
-      updated_at: new Date().toISOString(),
-    };
-    books[index] = updatedBook;
+    if (index !== -1) {
+      books[index] = updatedBook;
+    } else {
+      books.unshift(updatedBook);
+    }
     this.saveBooks(books);
 
-    // If stock changed directly via book edit, record transaction
-    if (updates.stock_quantity !== undefined && updates.stock_quantity !== oldStock) {
-      const diff = updates.stock_quantity - oldStock;
-      this.addTransaction({
-        book_id: updatedBook.id,
-        book_name: updatedBook.book_name,
-        transaction_type: diff > 0 ? 'increase' : 'decrease',
-        quantity: Math.abs(diff),
-        stock_before: oldStock,
-        stock_after: updates.stock_quantity,
-        created_by: updaterName,
-        note: 'ปรับปรุงจำนวนสต๊อกผ่านการแก้ไขข้อมูลหนังสือ',
-      });
-    }
+    // 3. Update transactions if stock changed
+    await this.fetchTransactionsFromApi().catch(() => {});
 
-    // Persist update to Cloud SQL PostgreSQL
-    try {
-      await fetch(`/api/books/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...updates, updaterName }),
-      });
-    } catch (err) {
-      console.warn('Cloud sync error during update:', err);
-    }
+    notifyDataUpdated('books');
+    notifyDataUpdated('transactions');
 
     return updatedBook;
   },
 
   async deleteBook(id: string): Promise<boolean> {
-    const books = this.getBooks();
-    const filtered = books.filter((b) => b.id !== id);
-    if (filtered.length === books.length) return false;
-    this.saveBooks(filtered);
+    // 1. Send delete request to Cloud SQL backend
+    const res = await fetch(`/api/books/${id}`, {
+      method: 'DELETE',
+    });
 
-    // Also remove associated transactions locally
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'ไม่สามารถลบหนังสือออกจากฐานข้อมูลกลางได้');
+    }
+
+    // 2. Update local cache
+    const books = this.getBooks().filter((b) => b.id !== id);
+    this.saveBooks(books);
+
     const txs = this.getTransactions().filter((t) => t.book_id !== id);
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
-    window.dispatchEvent(new Event('mcu_transactions_updated'));
 
-    // Persist deletion to Cloud SQL PostgreSQL
-    try {
-      await fetch(`/api/books/${id}`, {
-        method: 'DELETE',
-      });
-    } catch (err) {
-      console.warn('Cloud sync error during book deletion:', err);
-    }
+    notifyDataUpdated('books');
+    notifyDataUpdated('transactions');
 
     return true;
   },
@@ -263,58 +300,35 @@ export const storageService = {
     operatorName: string,
     note: string
   ): Promise<{ book: Book; transaction: StockTransaction } | null> {
-    const books = this.getBooks();
-    const index = books.findIndex((b) => b.id === bookId);
-    if (index === -1) return null;
-
-    const book = books[index];
-    const stockBefore = book.stock_quantity;
-    let stockAfter = stockBefore;
-
-    if (type === 'in' || type === 'increase') {
-      stockAfter = stockBefore + quantity;
-    } else if (type === 'decrease') {
-      stockAfter = Math.max(0, stockBefore - quantity);
-      book.sales_count = (book.sales_count || 0) + quantity;
-    } else if (type === 'damage') {
-      stockAfter = Math.max(0, stockBefore - quantity);
-    }
-
-    book.stock_quantity = stockAfter;
-    book.updated_at = new Date().toISOString();
-    books[index] = book;
-    this.saveBooks(books);
-
-    const defaultNote =
-      type === 'in'
-        ? 'รับเข้าสต๊อก'
-        : type === 'increase'
-        ? 'ปรับเพิ่มสต๊อก'
-        : type === 'damage'
-        ? 'หนังสือชำรุด / คัดออก'
-        : 'จำหน่าย / ขายสต๊อก';
-
-    const transaction = this.addTransaction({
-      book_id: book.id,
-      book_name: book.book_name,
-      transaction_type: type,
-      quantity,
-      stock_before: stockBefore,
-      stock_after: stockAfter,
-      created_by: operatorName,
-      note: note || defaultNote,
+    const res = await fetch(`/api/books/${bookId}/adjust-stock`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, quantity, operatorName, note }),
     });
 
-    // Persist to Cloud SQL PostgreSQL
-    try {
-      await fetch(`/api/books/${bookId}/adjust-stock`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, quantity, operatorName, note }),
-      });
-    } catch (err) {
-      console.warn('Cloud sync error during adjustStock:', err);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'ไม่สามารถบันทึกการปรับปรุงสต๊อกลงฐานข้อมูลกลางได้');
     }
+
+    const data = await res.json();
+    const book = parseBook(data.book);
+    const transaction = parseTransaction(data.transaction);
+
+    // Update local cache
+    const books = this.getBooks();
+    const idx = books.findIndex((b) => b.id === bookId);
+    if (idx !== -1) {
+      books[idx] = book;
+      this.saveBooks(books);
+    }
+
+    const txs = this.getTransactions().filter((t) => t.id !== transaction.id);
+    txs.unshift(transaction);
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
+
+    notifyDataUpdated('books');
+    notifyDataUpdated('transactions');
 
     return { book, transaction };
   },
@@ -329,71 +343,40 @@ export const storageService = {
     customerName?: string;
     note?: string;
   }): Promise<{ book: Book; transaction: StockTransaction } | null> {
-    const books = this.getBooks();
-    const index = books.findIndex((b) => b.id === params.bookId);
-    if (index === -1) return null;
-
-    const book = books[index];
-    const stockBefore = book.stock_quantity;
-    const qty = Math.max(1, params.quantity);
-
-    if (qty > stockBefore) {
-      throw new Error(`สต๊อกคงเหลือไม่พอ (${stockBefore} เล่ม) สำหรับการขายจำนวน ${qty} เล่ม`);
-    }
-
-    const stockAfter = Math.max(0, stockBefore - qty);
-    book.stock_quantity = stockAfter;
-    book.sales_count = (book.sales_count || 0) + qty;
-    book.updated_at = new Date().toISOString();
-    books[index] = book;
-    this.saveBooks(books);
-
-    const trackingTrimmed = params.trackingNumber.trim();
-    const customerTrimmed = params.customerName?.trim() || '';
-    const noteTrimmed = params.note?.trim() || '';
-    const unitPrice = Number(params.price) || 0;
-    const totalPrice = unitPrice * qty;
-
-    const formattedNote = [
-      `📮 ส่งไปรษณีย์ เลขพัสดุ: ${trackingTrimmed}`,
-      `ราคา ฿${unitPrice.toLocaleString('th-TH')} × ${qty} เล่ม = ฿${totalPrice.toLocaleString('th-TH')}`,
-      customerTrimmed ? `ผู้รับ: ${customerTrimmed}` : '',
-      noteTrimmed,
-    ]
-      .filter(Boolean)
-      .join(' · ');
-
-    const transaction = this.addTransaction({
-      book_id: book.id,
-      book_name: book.book_name,
-      transaction_type: 'decrease',
-      quantity: qty,
-      stock_before: stockBefore,
-      stock_after: stockAfter,
-      created_by: params.operatorName,
-      note: formattedNote,
-      tracking_number: trackingTrimmed,
-      price: unitPrice,
-      total_price: totalPrice,
-      customer_name: customerTrimmed,
-      sale_channel: 'postal',
+    const res = await fetch(`/api/books/${params.bookId}/postal-sale`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
     });
 
-    // Persist to Cloud SQL PostgreSQL
-    try {
-      await fetch(`/api/books/${params.bookId}/postal-sale`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-    } catch (err) {
-      console.warn('Cloud sync error during postal sale:', err);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'ไม่สามารถบันทึกรายการขายพัสดุลงฐานข้อมูลกลางได้');
     }
+
+    const data = await res.json();
+    const book = parseBook(data.book);
+    const transaction = parseTransaction(data.transaction);
+
+    // Update local cache
+    const books = this.getBooks();
+    const idx = books.findIndex((b) => b.id === params.bookId);
+    if (idx !== -1) {
+      books[idx] = book;
+      this.saveBooks(books);
+    }
+
+    const txs = this.getTransactions().filter((t) => t.id !== transaction.id);
+    txs.unshift(transaction);
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
+
+    notifyDataUpdated('books');
+    notifyDataUpdated('transactions');
 
     return { book, transaction };
   },
 
-  // Transactions
+  // Transactions Local Cache
   getTransactions(): StockTransaction[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
@@ -407,26 +390,26 @@ export const storageService = {
   },
 
   async deleteTransaction(id: string): Promise<void> {
-    const txs = this.getTransactions().filter((t) => t.id !== id);
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
-    window.dispatchEvent(new Event('mcu_transactions_updated'));
-
     try {
       await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
     } catch (e) {
-      console.warn('Cloud delete transaction notice:', e);
+      console.warn('Delete transaction remote error:', e);
     }
+
+    const txs = this.getTransactions().filter((t) => t.id !== id);
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
+    notifyDataUpdated('transactions');
   },
 
   async clearAllTransactions(): Promise<void> {
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify([]));
-    window.dispatchEvent(new Event('mcu_transactions_updated'));
-
     try {
       await fetch('/api/transactions', { method: 'DELETE' });
     } catch (e) {
-      console.warn('Cloud clear transactions notice:', e);
+      console.warn('Clear transactions remote error:', e);
     }
+
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify([]));
+    notifyDataUpdated('transactions');
   },
 
   addTransaction(data: Omit<StockTransaction, 'id' | 'created_at'>): StockTransaction {
@@ -438,9 +421,8 @@ export const storageService = {
     };
     txs.unshift(newTx);
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
-    window.dispatchEvent(new Event('mcu_transactions_updated'));
+    notifyDataUpdated('transactions');
 
-    // Persist to Cloud SQL PostgreSQL
     fetch('/api/transactions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -454,12 +436,11 @@ export const storageService = {
   getUsers(): User[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.USERS);
-      if (!data) {
+      if (data === null) {
         localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(INITIAL_USERS));
         return INITIAL_USERS;
       }
-      const parsed: User[] = JSON.parse(data);
-      return parsed;
+      return JSON.parse(data);
     } catch {
       return INITIAL_USERS;
     }
@@ -467,36 +448,13 @@ export const storageService = {
 
   saveUsers(users: User[]): void {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    window.dispatchEvent(new Event('mcu_users_updated'));
+    notifyDataUpdated('users');
   },
 
-  addUser(userData: Omit<User, 'id' | 'created_at'>): User {
-    const users = this.getUsers();
-    const newUser: User = {
-      ...userData,
-      id: 'user-' + Date.now().toString(36),
-      created_at: new Date().toISOString(),
-    };
-    users.push(newUser);
-    this.saveUsers(users);
-    return newUser;
-  },
-
-  updateUser(id: string, updates: Partial<User>): User | null {
-    const users = this.getUsers();
-    const index = users.findIndex((u) => u.id === id);
-    if (index === -1) return null;
-    users[index] = { ...users[index], ...updates };
-    this.saveUsers(users);
-    return users[index];
-  },
-
-  // Active User session
   getActiveUser(): User | null {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-      if (!data) return null;
-      return JSON.parse(data);
+      return data ? JSON.parse(data) : null;
     } catch {
       return null;
     }
@@ -575,9 +533,9 @@ export const storageService = {
     localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(INITIAL_BOOKS));
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(INITIAL_TRANSACTIONS));
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(INITIAL_USERS));
-    window.dispatchEvent(new Event('mcu_books_updated'));
-    window.dispatchEvent(new Event('mcu_transactions_updated'));
-    window.dispatchEvent(new Event('mcu_users_updated'));
+    notifyDataUpdated('books');
+    notifyDataUpdated('transactions');
+    notifyDataUpdated('users');
 
     try {
       await fetch('/api/reset-defaults', { method: 'POST' });
@@ -589,68 +547,63 @@ export const storageService = {
 
 /**
  * Real-time bidirectional synchronization with Cloud SQL PostgreSQL backend.
- * Synchronizes books and transactions across all devices and sessions.
+ * Synchronizes books and transactions across all devices, users, tabs, and sessions.
  */
 export function initializeCloudSync(): () => void {
   let isCancelled = false;
 
-  const syncBooksFromCloud = async () => {
+  const syncAll = async () => {
+    if (isCancelled) return;
     try {
-      const res = await fetch('/api/books');
-      if (res.ok && !isCancelled) {
-        const remoteBooks: any[] = await res.json();
-        if (Array.isArray(remoteBooks)) {
-          const parsed = remoteBooks.map(parseBook);
-          localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(parsed));
-          window.dispatchEvent(new Event('mcu_books_updated'));
-        }
-      }
+      await Promise.allSettled([
+        storageService.fetchBooksFromApi(),
+        storageService.fetchTransactionsFromApi(),
+      ]);
     } catch {
-      // Offline / network fallback
+      // Keep offline cache intact
     }
   };
 
-  const syncTransactionsFromCloud = async () => {
-    try {
-      const res = await fetch('/api/transactions');
-      if (res.ok && !isCancelled) {
-        const remoteTxs: any[] = await res.json();
-        if (Array.isArray(remoteTxs)) {
-          const parsed = remoteTxs.map(parseTransaction);
-          localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(parsed));
-          window.dispatchEvent(new Event('mcu_transactions_updated'));
-        }
-      }
-    } catch {
-      // Offline / network fallback
-    }
-  };
+  // Immediate sync upon initialization
+  syncAll();
 
-  // Immediate fetch
-  syncBooksFromCloud();
-  syncTransactionsFromCloud();
-
-  // Periodic polling every 5 seconds to sync data created/edited on other devices or tabs
+  // Frequent polling every 3.5 seconds across all connected devices and users
   const timer = setInterval(() => {
     if (!document.hidden && !isCancelled) {
-      syncBooksFromCloud();
-      syncTransactionsFromCloud();
+      syncAll();
     }
-  }, 5000);
+  }, 3500);
 
-  // Focus event for instant sync when returning to tab
-  const onFocus = () => {
-    if (!isCancelled) {
-      syncBooksFromCloud();
-      syncTransactionsFromCloud();
+  // Sync immediately when returning to the tab / window focus
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'visible' && !isCancelled) {
+      syncAll();
     }
   };
 
+  const onFocus = () => {
+    if (!isCancelled) {
+      syncAll();
+    }
+  };
+
+  document.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('focus', onFocus);
+
+  // Sync instantly across multiple browser tabs on the same computer
+  if (syncChannel) {
+    syncChannel.onmessage = () => {
+      if (!isCancelled) {
+        window.dispatchEvent(new Event('mcu_books_updated'));
+        window.dispatchEvent(new Event('mcu_transactions_updated'));
+      }
+    };
+  }
 
   return () => {
     isCancelled = true;
     clearInterval(timer);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('focus', onFocus);
   };
 }

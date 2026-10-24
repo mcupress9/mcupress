@@ -20,7 +20,7 @@ import {
   resetDatabase,
 } from './src/db/transactions.ts';
 import { getOrCreateUser, getUsers } from './src/db/users.ts';
-import { optionalAuth, requireAuth, AuthRequest } from './src/middleware/auth.ts';
+import { optionalAuth, requireAuth, type AuthRequest } from './src/middleware/auth.ts';
 
 dotenv.config();
 
