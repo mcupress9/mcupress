@@ -15,6 +15,7 @@ import {
 import { Book } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { storageService } from '../services/storage';
+import { compressImageFile } from '../utils/imageCompressor';
 
 interface AddBookPageProps {
   onSuccess: (book: Book) => void;
@@ -171,12 +172,12 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setCoverImage(event.target?.result as string);
+      try {
+        const compressed = await compressImageFile(file);
+        setCoverImage(compressed);
         setErrorMessages([]);
         if (fieldErrors['coverImage']) {
           setFieldErrors((prev) => {
@@ -185,21 +186,23 @@ export const AddBookPage: React.FC<AddBookPageProps> = ({ onSuccess, onCancel })
             return next;
           });
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn('Failed to compress image:', err);
+      }
     }
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setCoverImage(event.target?.result as string);
+      try {
+        const compressed = await compressImageFile(file);
+        setCoverImage(compressed);
         setErrorMessages([]);
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn('Failed to compress dropped image:', err);
+      }
     }
   };
 

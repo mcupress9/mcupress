@@ -30,7 +30,16 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Graceful handler for body parser errors (e.g. 413 Payload Too Large)
+app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+    return res.status(413).json({ error: 'ไฟล์ข้อมูลหรือรูปภาพมีขนาดใหญ่เกินกำหนด กรุณาเลือกรูปภาพที่เล็กลง' });
+  }
+  next(err);
+});
 
 // Clean start with empty database (ready for real user data)
 

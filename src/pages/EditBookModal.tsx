@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   CheckCircle2,
@@ -11,6 +11,7 @@ import {
 import { Book } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { storageService } from '../services/storage';
+import { compressImageFile } from '../utils/imageCompressor';
 
 interface EditBookModalProps {
   book: Book;
@@ -49,6 +50,26 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (book) {
+      setBookName(book.book_name || '');
+      setAuthor(book.author || '');
+      setPages((book.pages ?? 0).toString());
+      setIsbn(book.isbn || '');
+      setPublishedYear((book.published_year ?? 2567).toString());
+      setPrice((book.price ?? 0).toString());
+      setStockQuantity((book.stock_quantity ?? 0).toString());
+      setCoverImage(book.cover_image || DEFAULT_FALLBACK_COVER);
+      setCategory(book.category || 'พระไตรปิฎกและคัมภีร์ศึกษา');
+      setDescription(book.description || '');
+      setIsBestseller(Boolean(book.is_bestseller));
+      setSalesCount((book.sales_count ?? 0).toString());
+      setFieldErrors({});
+      setErrorMessages([]);
+      setSuccessMessage('');
+    }
+  }, [book, isOpen]);
+
   if (!isOpen) return null;
 
   const handleFieldChange = (field: string, setter: (val: any) => void, val: any) => {
@@ -65,15 +86,16 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setCoverImage(event.target?.result as string);
+      try {
+        const compressed = await compressImageFile(file);
+        setCoverImage(compressed);
         setErrorMessages([]);
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.warn('Failed to compress image:', err);
+      }
     }
   };
 

@@ -121,17 +121,23 @@ export async function adjustStock(params: {
 }) {
   try {
     return await withDbRetry(async () => {
-      const existing = await db.select().from(books).where(eq(books.id, params.bookId));
+      const targetBookId = decodeURIComponent(params.bookId);
+      const existing = await db.select().from(books).where(eq(books.id, targetBookId));
       let book: typeof books.$inferSelect;
 
       if (!existing.length) {
         const defaultCover =
           'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
         const fb = params.bookFallback || {};
+        const parsedInitialStock =
+          fb.stock_quantity !== undefined && !isNaN(Number(fb.stock_quantity))
+            ? Number(fb.stock_quantity)
+            : 0;
+
         const created = await db
           .insert(books)
           .values({
-            id: params.bookId,
+            id: targetBookId,
             book_name: (fb.book_name || 'หนังสือวิชาการ มจร').trim(),
             author: (fb.author || 'สำนักพิมพ์ มจร').trim(),
             pages: Number(fb.pages) || 100,
@@ -139,7 +145,7 @@ export async function adjustStock(params: {
             published_year: Number(fb.published_year) || 2567,
             price: (fb.price ?? '100').toString(),
             cover_image: (fb.cover_image && fb.cover_image.trim()) ? fb.cover_image.trim() : defaultCover,
-            stock_quantity: 0,
+            stock_quantity: parsedInitialStock,
             category: fb.category || 'พระไตรปิฎกและคัมภีร์ศึกษา',
             description: (fb.description || '').trim(),
             is_bestseller: Boolean(fb.is_bestseller),
@@ -174,7 +180,7 @@ export async function adjustStock(params: {
           sales_count: salesCount,
           updated_at: new Date().toISOString(),
         })
-        .where(eq(books.id, params.bookId))
+        .where(eq(books.id, targetBookId))
         .returning();
 
       const defaultNote =
@@ -187,7 +193,7 @@ export async function adjustStock(params: {
           : 'จำหน่าย / ขายสต๊อก';
 
       const newTx = {
-        id: 'tx-' + Date.now().toString(36),
+        id: 'tx-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
         book_id: book.id,
         book_name: book.book_name,
         transaction_type: params.type,
@@ -224,17 +230,23 @@ export async function postalSale(params: {
 }) {
   try {
     return await withDbRetry(async () => {
-      const existing = await db.select().from(books).where(eq(books.id, params.bookId));
+      const targetBookId = decodeURIComponent(params.bookId);
+      const existing = await db.select().from(books).where(eq(books.id, targetBookId));
       let book: typeof books.$inferSelect;
 
       if (!existing.length) {
         const defaultCover =
           'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
         const fb = params.bookFallback || {};
+        const parsedInitialStock =
+          fb.stock_quantity !== undefined && !isNaN(Number(fb.stock_quantity))
+            ? Number(fb.stock_quantity)
+            : params.quantity;
+
         const created = await db
           .insert(books)
           .values({
-            id: params.bookId,
+            id: targetBookId,
             book_name: (fb.book_name || 'หนังสือวิชาการ มจร').trim(),
             author: (fb.author || 'สำนักพิมพ์ มจร').trim(),
             pages: Number(fb.pages) || 100,
@@ -242,7 +254,7 @@ export async function postalSale(params: {
             published_year: Number(fb.published_year) || 2567,
             price: (fb.price ?? (params.price || '100')).toString(),
             cover_image: (fb.cover_image && fb.cover_image.trim()) ? fb.cover_image.trim() : defaultCover,
-            stock_quantity: params.quantity,
+            stock_quantity: parsedInitialStock,
             category: fb.category || 'พระไตรปิฎกและคัมภีร์ศึกษา',
             description: (fb.description || '').trim(),
             is_bestseller: Boolean(fb.is_bestseller),
@@ -274,7 +286,7 @@ export async function postalSale(params: {
           sales_count: newSalesCount,
           updated_at: new Date().toISOString(),
         })
-        .where(eq(books.id, params.bookId))
+        .where(eq(books.id, targetBookId))
         .returning();
 
       const trackingTrimmed = params.trackingNumber.trim();
@@ -293,7 +305,7 @@ export async function postalSale(params: {
         .join(' · ');
 
       const newTx = {
-        id: 'tx-' + Date.now().toString(36),
+        id: 'tx-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
         book_id: book.id,
         book_name: book.book_name,
         transaction_type: 'decrease',

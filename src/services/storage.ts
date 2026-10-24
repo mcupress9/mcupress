@@ -135,7 +135,20 @@ export const storageService = {
     try {
       localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(books));
     } catch {
-      // Ignore quota error
+      // If browser localStorage quota is exceeded (e.g. from previously uploaded raw images),
+      // replace giant base64 URLs in local cache with fallback so storage continues to work
+      try {
+        const leanBooks = books.map((b) => ({
+          ...b,
+          cover_image:
+            b.cover_image && b.cover_image.startsWith('data:') && b.cover_image.length > 200000
+              ? 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'
+              : b.cover_image,
+        }));
+        localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(leanBooks));
+      } catch {
+        // Safe fail
+      }
     }
     notifyDataUpdated('books');
   },
@@ -235,15 +248,23 @@ export const storageService = {
     updaterName: string
   ): Promise<Book | null> {
     // 1. Send update to Cloud SQL backend
-    const res = await fetch(`/api/books/${id}`, {
+    const res = await fetch(`/api/books/${encodeURIComponent(id)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...updates, updaterName }),
     });
 
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || 'ไม่สามารถบันทึกการแก้ไขลงฐานข้อมูลกลางได้');
+      let errorMsg = 'ไม่สามารถบันทึกการแก้ไขลงฐานข้อมูลกลางได้';
+      try {
+        const errData = await res.json();
+        if (errData?.error) errorMsg = errData.error;
+      } catch {
+        if (res.status === 413) {
+          errorMsg = 'ไฟล์ภาพหรือข้อมูลมีขนาดใหญ่เกินไป';
+        }
+      }
+      throw new Error(errorMsg);
     }
 
     const updatedRemote = await res.json();
@@ -270,7 +291,7 @@ export const storageService = {
 
   async deleteBook(id: string): Promise<boolean> {
     // 1. Send delete request to Cloud SQL backend
-    const res = await fetch(`/api/books/${id}`, {
+    const res = await fetch(`/api/books/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
 
@@ -303,7 +324,13 @@ export const storageService = {
   ): Promise<{ book: Book; transaction: StockTransaction } | null> {
     const localBook = bookFallback || this.getBooks().find((b) => b.id === bookId);
 
-    const res = await fetch(`/api/books/${bookId}/adjust-stock`, {
+    // Omit oversized raw base64 data URLs in fallback payload to avoid HTTP 413
+    const safeCover =
+      localBook?.cover_image && localBook.cover_image.length < 200000
+        ? localBook.cover_image
+        : undefined;
+
+    const res = await fetch(`/api/books/${encodeURIComponent(bookId)}/adjust-stock`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -319,17 +346,26 @@ export const storageService = {
               isbn: localBook.isbn,
               published_year: localBook.published_year,
               price: localBook.price,
-              cover_image: localBook.cover_image,
+              cover_image: safeCover,
               category: localBook.category,
               description: localBook.description,
+              stock_quantity: localBook.stock_quantity,
             }
           : undefined,
       }),
     });
 
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || 'ไม่สามารถบันทึกการปรับปรุงสต๊อกลงฐานข้อมูลกลางได้');
+      let errorMsg = 'ไม่สามารถบันทึกการปรับปรุงสต็อกลงฐานข้อมูลกลางได้';
+      try {
+        const errData = await res.json();
+        if (errData?.error) errorMsg = errData.error;
+      } catch {
+        if (res.status === 413) {
+          errorMsg = 'ไฟล์ข้อมูลมีขนาดใหญ่เกินไป';
+        }
+      }
+      throw new Error(errorMsg);
     }
 
     const data = await res.json();
@@ -369,7 +405,12 @@ export const storageService = {
   }): Promise<{ book: Book; transaction: StockTransaction } | null> {
     const localBook = params.bookFallback || this.getBooks().find((b) => b.id === params.bookId);
 
-    const res = await fetch(`/api/books/${params.bookId}/postal-sale`, {
+    const safeCover =
+      localBook?.cover_image && localBook.cover_image.length < 200000
+        ? localBook.cover_image
+        : undefined;
+
+    const res = await fetch(`/api/books/${encodeURIComponent(params.bookId)}/postal-sale`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -382,17 +423,26 @@ export const storageService = {
               isbn: localBook.isbn,
               published_year: localBook.published_year,
               price: localBook.price,
-              cover_image: localBook.cover_image,
+              cover_image: safeCover,
               category: localBook.category,
               description: localBook.description,
+              stock_quantity: localBook.stock_quantity,
             }
           : undefined,
       }),
     });
 
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || 'ไม่สามารถบันทึกรายการขายพัสดุลงฐานข้อมูลกลางได้');
+      let errorMsg = 'ไม่สามารถบันทึกรายการขายพัสดุลงฐานข้อมูลกลางได้';
+      try {
+        const errData = await res.json();
+        if (errData?.error) errorMsg = errData.error;
+      } catch {
+        if (res.status === 413) {
+          errorMsg = 'ไฟล์ข้อมูลมีขนาดใหญ่เกินไป';
+        }
+      }
+      throw new Error(errorMsg);
     }
 
     const data = await res.json();
