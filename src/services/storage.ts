@@ -298,9 +298,10 @@ export const storageService = {
     type: TransactionType,
     quantity: number,
     operatorName: string,
-    note: string
+    note: string,
+    bookFallback?: Partial<Book>
   ): Promise<{ book: Book; transaction: StockTransaction } | null> {
-    const localBook = this.getBooks().find((b) => b.id === bookId);
+    const localBook = bookFallback || this.getBooks().find((b) => b.id === bookId);
 
     const res = await fetch(`/api/books/${bookId}/adjust-stock`, {
       method: 'POST',
@@ -364,8 +365,9 @@ export const storageService = {
     operatorName: string;
     customerName?: string;
     note?: string;
+    bookFallback?: Partial<Book>;
   }): Promise<{ book: Book; transaction: StockTransaction } | null> {
-    const localBook = this.getBooks().find((b) => b.id === params.bookId);
+    const localBook = params.bookFallback || this.getBooks().find((b) => b.id === params.bookId);
 
     const res = await fetch(`/api/books/${params.bookId}/postal-sale`, {
       method: 'POST',

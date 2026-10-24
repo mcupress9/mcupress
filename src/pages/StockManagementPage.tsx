@@ -140,6 +140,7 @@ export const StockManagementPage: React.FC<StockManagementPageProps> = ({
             operatorName: currentUser?.name || 'เจ้าหน้าที่คลัง',
             customerName: customerName.trim(),
             note: note.trim(),
+            bookFallback: selectedBook,
           });
 
           setIsSubmitting(false);
@@ -167,7 +168,8 @@ export const StockManagementPage: React.FC<StockManagementPageProps> = ({
             adjustType,
             qty,
             currentUser?.name || 'เจ้าหน้าที่คลัง',
-            saleNote
+            saleNote,
+            selectedBook
           );
 
           setIsSubmitting(false);
