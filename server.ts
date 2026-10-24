@@ -68,23 +68,34 @@ app.get('/api/books/:id', optionalAuth, async (req, res) => {
 app.post('/api/books', optionalAuth, async (req: AuthRequest, res) => {
   try {
     const body = req.body;
+
+    if (!body.book_name || !body.book_name.trim()) {
+      return res.status(400).json({ error: 'กรุณากรอกชื่อหนังสือ (จำเป็น)' });
+    }
+    if (!body.author || !body.author.trim()) {
+      return res.status(400).json({ error: 'กรุณากรอกชื่อผู้แต่ง (จำเป็น)' });
+    }
+
+    const defaultCover =
+      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
+
     const newBook = {
       id: body.id || 'mcu-b' + Date.now().toString(36),
-      book_name: body.book_name,
-      author: body.author,
+      book_name: body.book_name.trim(),
+      author: body.author.trim(),
       pages: Number(body.pages) || 0,
-      isbn: body.isbn || '',
+      isbn: (body.isbn || '').trim(),
       published_year: Number(body.published_year) || 2567,
       price: (body.price ?? '0').toString(),
-      cover_image: body.cover_image || '',
+      cover_image: (body.cover_image && body.cover_image.trim()) ? body.cover_image.trim() : defaultCover,
       stock_quantity: Number(body.stock_quantity) || 0,
-      category: body.category || '',
-      description: body.description || '',
+      category: body.category || 'พระไตรปิฎกและคัมภีร์ศึกษา',
+      description: (body.description || '').trim(),
       is_bestseller: Boolean(body.is_bestseller),
       sales_count: Number(body.sales_count) || 0,
       created_at: body.created_at || new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      created_by: body.created_by || req.user?.email || 'เจ้าหน้าที่',
+      created_by: body.created_by || req.user?.email || 'เจ้าหน้าที่สำนักพิมพ์',
     };
 
     const created = await createBook(newBook);

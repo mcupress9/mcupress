@@ -3,10 +3,10 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
-  UploadCloud,
   Save,
   BookOpen,
   Flame,
+  CornerDownRight,
 } from 'lucide-react';
 import { Book } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,9 @@ interface EditBookModalProps {
   onClose: () => void;
   onSaved: (updatedBook: Book) => void;
 }
+
+const DEFAULT_FALLBACK_COVER =
+  'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80';
 
 export const EditBookModal: React.FC<EditBookModalProps> = ({
   book,
@@ -34,18 +37,30 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
   const [publishedYear, setPublishedYear] = useState(book.published_year.toString());
   const [price, setPrice] = useState(book.price.toString());
   const [stockQuantity, setStockQuantity] = useState(book.stock_quantity.toString());
-  const [coverImage, setCoverImage] = useState(book.cover_image);
+  const [coverImage, setCoverImage] = useState(book.cover_image || DEFAULT_FALLBACK_COVER);
   const [category, setCategory] = useState(book.category || 'พระไตรปิฎกและคัมภีร์ศึกษา');
   const [description, setDescription] = useState(book.description || '');
   const [isBestseller, setIsBestseller] = useState(book.is_bestseller || false);
   const [salesCount, setSalesCount] = useState((book.sales_count || 0).toString());
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [errorMessages, setErrorMessages] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
+
+  const handleFieldChange = (field: string, setter: (val: any) => void, val: any) => {
+    setter(val);
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,41 +76,54 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: string[] = [];
+    const newFieldErrors: Record<string, string> = {};
 
-    if (!bookName.trim()) errors.push('ชื่อหนังสือต้องไม่ว่าง');
-    if (!author.trim()) errors.push('ชื่อผู้แต่งต้องไม่ว่าง');
+    if (!bookName.trim()) {
+      newFieldErrors.bookName = 'กรุณาระบุชื่อหนังสือ';
+      errors.push('ชื่อหนังสือต้องไม่ว่าง');
+    }
+
+    if (!author.trim()) {
+      newFieldErrors.author = 'กรุณาระบุชื่อผู้แต่ง / บรรณาธิการ';
+      errors.push('ชื่อผู้แต่งต้องไม่ว่าง');
+    }
 
     const parsedPages = parseInt(pages, 10);
-    if (!pages || isNaN(parsedPages) || parsedPages <= 0) {
+    if (!pages.toString().trim() || isNaN(parsedPages) || parsedPages <= 0) {
+      newFieldErrors.pages = 'กรุณาระบุจำนวนหน้าเป็นตัวเลขมากกว่า 0';
       errors.push('จำนวนหน้าต้องเป็นตัวเลขมากกว่า 0');
     }
 
     const parsedYear = parseInt(publishedYear, 10);
-    if (!publishedYear || isNaN(parsedYear) || parsedYear < 2400) {
+    if (!publishedYear.toString().trim() || isNaN(parsedYear) || parsedYear < 2400 || parsedYear > 2700) {
+      newFieldErrors.publishedYear = 'กรุณาระบุปีที่พิมพ์ พ.ศ. (ระหว่าง 2400-2700)';
       errors.push('ปีที่พิมพ์ต้องเป็นตัวเลข พ.ศ. ที่ถูกต้อง');
     }
 
     const parsedPrice = parseFloat(price);
-    if (!price || isNaN(parsedPrice) || parsedPrice < 0) {
+    if (price.toString().trim() === '' || isNaN(parsedPrice) || parsedPrice < 0) {
+      newFieldErrors.price = 'กรุณาระบุราคาปกเป็นตัวเลข 0 ขึ้นไป';
       errors.push('ราคาต้องเป็นตัวเลข');
     }
 
     const parsedStock = parseInt(stockQuantity, 10);
-    if (stockQuantity === '' || isNaN(parsedStock) || parsedStock < 0) {
+    if (stockQuantity.toString().trim() === '' || isNaN(parsedStock) || parsedStock < 0) {
+      newFieldErrors.stockQuantity = 'กรุณาระบุจำนวนคงเหลือสต๊อกเป็นตัวเลข 0 ขึ้นไป';
       errors.push('จำนวนคงเหลือต้องเป็นตัวเลข');
     }
 
-    if (!coverImage.trim()) {
-      errors.push('ต้องมีรูปปกหนังสือ');
-    }
+    setFieldErrors(newFieldErrors);
 
     if (errors.length > 0) {
       setErrorMessages(errors);
       return;
     }
 
+    const finalCover = coverImage.trim() ? coverImage.trim() : DEFAULT_FALLBACK_COVER;
+
     setIsSubmitting(true);
     setErrorMessages([]);
+    setFieldErrors({});
 
     (async () => {
       try {
@@ -109,7 +137,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
             published_year: parsedYear,
             price: parsedPrice,
             stock_quantity: parsedStock,
-            cover_image: coverImage,
+            cover_image: finalCover,
             category,
             description: description.trim(),
             is_bestseller: isBestseller,
@@ -127,13 +155,15 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
             onClose();
           }, 500);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to update book:', err);
         setIsSubmitting(false);
-        setErrorMessages(['เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง']);
+        setErrorMessages([err?.message || 'เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง']);
       }
     })();
   };
+
+  const hasErrors = Object.keys(fieldErrors).length > 0 || errorMessages.length > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
@@ -161,38 +191,22 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
 
         {/* Success Alert */}
         {successMessage && (
-          <div className="m-6 mb-0 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-2.5 text-sm font-bold animate-in fade-in">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <div className="m-4 sm:m-6 mb-0 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-2.5 text-xs sm:text-sm font-bold animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
 
-        {/* Error Alert */}
-        {errorMessages.length > 0 && (
-          <div className="m-6 mb-0 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1">
-            <div className="flex items-center gap-1.5 font-bold">
-              <AlertCircle className="w-4 h-4 text-rose-600" />
-              <span>โปรดแก้ไขข้อผิดพลาดต่อไปนี้:</span>
-            </div>
-            <ul className="list-disc list-inside space-y-0.5">
-              {errorMessages.map((e, idx) => (
-                <li key={idx}>{e}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {/* Modal Form */}
-        <form onSubmit={handleSave} className="p-3.5 sm:p-6 space-y-3 sm:space-y-4 max-h-[75vh] overflow-y-auto">
+        <form noValidate onSubmit={handleSave} className="p-3.5 sm:p-6 space-y-3 sm:space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Cover thumbnail & upload */}
-          <div className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-4 rounded-xl sm:rounded-3xl bg-slate-50/70 border border-slate-200/80">
+          <div className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-50/70 border border-slate-200/80">
             <img
               src={coverImage}
               alt="Cover Preview"
               className="w-12 h-16 sm:w-16 sm:h-22 object-cover rounded-md shadow-xs border border-slate-200 flex-shrink-0"
               onError={(e) => {
-                (e.target as HTMLImageElement).src =
-                  'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=200';
+                (e.target as HTMLImageElement).src = DEFAULT_FALLBACK_COVER;
               }}
             />
             <div className="flex-1 min-w-0">
@@ -204,13 +218,22 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
                 accept="image/*"
                 className="hidden"
               />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-rose-300 text-xs font-bold text-rose-800 transition-colors cursor-pointer shadow-xs"
-              >
-                เลือกรูปใหม่จากเครื่อง
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-rose-300 text-xs font-bold text-rose-800 transition-colors cursor-pointer shadow-xs"
+                >
+                  เลือกรูปใหม่
+                </button>
+                <input
+                  type="text"
+                  value={coverImage}
+                  onChange={(e) => setCoverImage(e.target.value)}
+                  placeholder="URL รูปภาพ"
+                  className="flex-1 min-w-[140px] px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-white"
+                />
+              </div>
             </div>
           </div>
 
@@ -221,13 +244,22 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
             <input
               type="text"
               value={bookName}
-              onChange={(e) => setBookName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-2xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 transition-all shadow-xs"
-              required
+              onChange={(e) => handleFieldChange('bookName', setBookName, e.target.value)}
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-sm text-slate-900 focus:outline-none transition-all shadow-xs ${
+                fieldErrors.bookName
+                  ? 'border-red-500 bg-red-50/30 ring-2 ring-red-400/30'
+                  : 'border-slate-200/90 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-rose-400'
+              }`}
             />
+            {fieldErrors.bookName && (
+              <p className="mt-1 text-xs font-semibold text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>{fieldErrors.bookName}</span>
+              </p>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
                 ผู้แต่ง <span className="text-rose-500">*</span>
@@ -235,10 +267,19 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
               <input
                 type="text"
                 value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 transition-all shadow-xs"
-                required
+                onChange={(e) => handleFieldChange('author', setAuthor, e.target.value)}
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-sm text-slate-900 focus:outline-none transition-all shadow-xs ${
+                  fieldErrors.author
+                    ? 'border-red-500 bg-red-50/30 ring-2 ring-red-400/30'
+                    : 'border-slate-200/90 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-rose-400'
+                }`}
               />
+              {fieldErrors.author && (
+                <p className="mt-1 text-xs font-semibold text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>{fieldErrors.author}</span>
+                </p>
+              )}
             </div>
 
             <div>
@@ -249,7 +290,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
                 type="text"
                 value={isbn}
                 onChange={(e) => setIsbn(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-rose-400 transition-all shadow-xs"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-rose-400 transition-all shadow-xs"
               />
             </div>
           </div>
@@ -263,23 +304,35 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
                 type="number"
                 min="1"
                 value={pages}
-                onChange={(e) => setPages(e.target.value)}
-                className="w-full px-3 py-2 rounded-2xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 transition-all shadow-xs"
-                required
+                onChange={(e) => handleFieldChange('pages', setPages, e.target.value)}
+                className={`w-full px-3 py-2 rounded-xl border text-sm text-slate-900 focus:outline-none transition-all shadow-xs ${
+                  fieldErrors.pages
+                    ? 'border-red-500 bg-red-50/30 ring-2 ring-red-400/30'
+                    : 'border-slate-200/90 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-rose-400'
+                }`}
               />
+              {fieldErrors.pages && (
+                <p className="mt-1 text-[11px] font-semibold text-red-600">{fieldErrors.pages}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                ปีที่พิมพ์ (พ.ศ.) <span className="text-rose-500">*</span>
+                ปีพิมพ์ (พ.ศ.) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
                 value={publishedYear}
-                onChange={(e) => setPublishedYear(e.target.value)}
-                className="w-full px-3 py-2 rounded-2xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 transition-all shadow-xs"
-                required
+                onChange={(e) => handleFieldChange('publishedYear', setPublishedYear, e.target.value)}
+                className={`w-full px-3 py-2 rounded-xl border text-sm text-slate-900 focus:outline-none transition-all shadow-xs ${
+                  fieldErrors.publishedYear
+                    ? 'border-red-500 bg-red-50/30 ring-2 ring-red-400/30'
+                    : 'border-slate-200/90 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-rose-400'
+                }`}
               />
+              {fieldErrors.publishedYear && (
+                <p className="mt-1 text-[11px] font-semibold text-red-600">{fieldErrors.publishedYear}</p>
+              )}
             </div>
 
             <div>
@@ -290,10 +343,16 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
                 type="number"
                 min="0"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="w-full px-3 py-2 rounded-2xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 font-bold transition-all shadow-xs"
-                required
+                onChange={(e) => handleFieldChange('price', setPrice, e.target.value)}
+                className={`w-full px-3 py-2 rounded-xl border text-sm text-slate-900 focus:outline-none font-bold transition-all shadow-xs ${
+                  fieldErrors.price
+                    ? 'border-red-500 bg-red-50/30 ring-2 ring-red-400/30'
+                    : 'border-slate-200/90 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-rose-400'
+                }`}
               />
+              {fieldErrors.price && (
+                <p className="mt-1 text-[11px] font-semibold text-red-600">{fieldErrors.price}</p>
+              )}
             </div>
 
             <div>
@@ -304,10 +363,16 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
                 type="number"
                 min="0"
                 value={stockQuantity}
-                onChange={(e) => setStockQuantity(e.target.value)}
-                className="w-full px-3 py-2 rounded-2xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 font-black text-rose-800 transition-all shadow-xs"
-                required
+                onChange={(e) => handleFieldChange('stockQuantity', setStockQuantity, e.target.value)}
+                className={`w-full px-3 py-2 rounded-xl border text-sm text-slate-900 focus:outline-none font-black text-rose-800 transition-all shadow-xs ${
+                  fieldErrors.stockQuantity
+                    ? 'border-red-500 bg-red-50/30 ring-2 ring-red-400/30'
+                    : 'border-slate-200/90 bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-rose-400'
+                }`}
               />
+              {fieldErrors.stockQuantity && (
+                <p className="mt-1 text-[11px] font-semibold text-red-600">{fieldErrors.stockQuantity}</p>
+              )}
             </div>
           </div>
 
@@ -318,7 +383,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-2xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 cursor-pointer transition-all shadow-xs"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 cursor-pointer transition-all shadow-xs"
             >
               <option value="พระไตรปิฎกและคัมภีร์ศึกษา">พระไตรปิฎกและคัมภีร์ศึกษา</option>
               <option value="พุทธปรัชญาและสังคม">พุทธปรัชญาและสังคม</option>
@@ -328,6 +393,7 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
               <option value="ภาษาบาลีและสันสกฤต">ภาษาบาลีและสันสกฤต</option>
               <option value="ระเบียบวิธีวิจัยและนวัตกรรม">ระเบียบวิธีวิจัยและนวัตกรรม</option>
               <option value="ตำราเรียนระดับอุดมศึกษา">ตำราเรียนระดับอุดมศึกษา</option>
+              <option value="ทั่วไป">ทั่วไป</option>
             </select>
           </div>
 
@@ -339,12 +405,12 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-2xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none transition-all shadow-xs"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200/90 bg-slate-50/50 focus:bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none transition-all shadow-xs"
             />
           </div>
 
           {/* Bestseller Settings */}
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-50/50 via-white to-pink-50/40 border border-rose-100 space-y-3">
+          <div className="p-3.5 rounded-xl bg-gradient-to-r from-rose-50/50 via-white to-pink-50/40 border border-rose-100 space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-[#ED1760] text-white flex items-center justify-center">
@@ -388,8 +454,23 @@ export const EditBookModal: React.FC<EditBookModalProps> = ({
             )}
           </div>
 
+          {/* Error Summary Banner if needed */}
+          {hasErrors && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-red-700 mb-1">
+                <AlertCircle className="w-4 h-4" />
+                <span>ยังมีข้อมูลที่ไม่ถูกต้อง กรุณาตรวจสอบ:</span>
+              </div>
+              <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                {Object.values(fieldErrors).map((msg, i) => (
+                  <li key={i}>{msg}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Footer Action */}
-          <div className="pt-4 border-t border-[#F3DDE7] flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-[#F3DDE7] flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
